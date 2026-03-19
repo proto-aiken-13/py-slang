@@ -1,41 +1,48 @@
-// This file is adapted from:
-// https://github.com/source-academy/conductor
-// Original author(s): Source Academy Team
+import { createBackend } from "../backend/config";
+import type { BackendType } from "../backend/config";
+import { parse } from "../parser/parser-adapter";
+import { analyze, FunctionEnvironments } from "../resolver";
+import { BasicEvaluator } from "@sourceacademy/conductor/runner";
+import type { Backend } from "../backend/backend";
+import { StmtNS } from "../ast-types";
 
-import { BasicEvaluator, IRunnerPlugin } from "@sourceacademy/conductor/runner";
-import { Context } from "../cse-machine/context";
-import { IOptions, runInContext } from "../runner/pyRunner";
-import { Finished } from "../types";
-
-const defaultContext = new Context();
-const defaultOptions: IOptions = {
-  isPrelude: false,
-  envSteps: 100000,
-  stepLimit: 100000,
-};
+declare const __BACKEND__: string;
+declare const __JIT__: boolean;
 
 export default class PyEvaluator extends BasicEvaluator {
-  private context: Context;
-  private options: IOptions;
-
-  constructor(conductor: IRunnerPlugin) {
-    super(conductor);
-    this.context = defaultContext;
-    this.options = defaultOptions;
-  }
+  private lastSource: string | null = null;
+  private lastAST: StmtNS.FileInput | null = null;
+  private backend: Backend = createBackend({
+    backend: (typeof __BACKEND__ !== "undefined" ? __BACKEND__ : "svml") as BackendType,
+    jit: typeof __JIT__ !== "undefined" ? __JIT__ : true,
+  });
 
   async evaluateChunk(chunk: string): Promise<void> {
     try {
-      const result = await runInContext(
-        chunk, // Code
-        this.context,
-        this.options,
-      );
-      this.conductor.sendOutput(
-        `${(result as Finished).representation.toString((result as Finished).value)}`,
-      );
+      if (chunk !== this.lastSource) {
+        const script = chunk + "\n";
+        this.lastAST = parse(script) as StmtNS.FileInput;
+        analyze(this.lastAST, script, 4);
+        this.lastSource = chunk;
+      }
+
+      const ast = this.lastAST!;
+      const emptyEnvs = new Map() as FunctionEnvironments;
+      const result = await this.backend.run(ast, emptyEnvs);
+
+      if (result.stdout) {
+        this.conductor.sendOutput(result.stdout);
+      }
+      if (result.stderr) {
+        this.conductor.sendOutput(result.stderr);
+      }
+      if (result.error) {
+        this.conductor.sendOutput(`Error: ${result.error.message}`);
+      }
     } catch (error) {
-      this.conductor.sendOutput(`Error: ${error instanceof Error ? error.message : error}`);
+      this.conductor.sendOutput(
+        `Error: ${error instanceof Error ? error.message : error}`
+      );
     }
   }
 }

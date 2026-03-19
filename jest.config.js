@@ -15,5 +15,6 @@ module.exports = {
   },
   transformIgnorePatterns: ["/node_modules/(?!(@sourceacademy/wasm-util)/).+\\.js$"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+  setupFiles: ["./src/tests/setup.ts"],
   coverageReporters: ["lcov"],
 };

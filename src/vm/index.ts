@@ -20,3 +20,7 @@ export { default as OpCodes } from "./opcodes";
 
 // Primitives
 export { PRIMITIVE_FUNCTIONS, executePrimitive } from "./sinter-primitives";
+
+// Backend
+export { SVMLBackend } from "./svml-backend";
+export { SVMLAdapter } from "./svml-adapter";
