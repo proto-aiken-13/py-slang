@@ -280,7 +280,111 @@ export const NEG_FX = wasm
     wasm.unreachable(),
   );
 
-export const ARITHMETIC_OP_TAG = { ADD: 0, SUB: 1, MUL: 2, DIV: 3 } as const;
+// Fast boolean NOT for provably-boolean operands.
+// Caller must guarantee $x_tag == TYPE_TAG.BOOL (payload is exactly 0 or 1).
+// NOT flips: 0 → 1, 1 → 0. 1 - x is correct for {0,1} domain; i64.xor(x, 1) is equivalent.
+export const FAST_BOOL_NOT_FX = wasm
+  .func("$_fast_bool_not")
+  .params({ $x_tag: i32, $x_val: i64 })
+  .results(i32, i64)
+  .body(i32.const(TYPE_TAG.BOOL), i64.sub(i64.const(1), local.get("$x_val")));
+
+// Fast integer negation for provably-integer operands.
+// Two's complement negation: i64.sub(0, x) = -x for all i64 values.
+export const FAST_INT_NEG_FX = wasm
+  .func("$_fast_int_neg")
+  .params({ $x_tag: i32, $x_val: i64 })
+  .results(i32, i64)
+  .body(i32.const(TYPE_TAG.INT), i64.sub(i64.const(0), local.get("$x_val")));
+
+export const ARITHMETIC_OP_TAG = { ADD: 0, SUB: 1, MUL: 2, DIV: 3, MOD: 4 } as const;
+
+// Fast-path helpers for known-integer operands: bypass runtime type dispatch.
+export const FAST_INT_ADD_FX = wasm
+  .func("$_fast_int_add")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(i32.const(TYPE_TAG.INT), i64.add(local.get("$x_val"), local.get("$y_val")));
+
+export const FAST_INT_SUB_FX = wasm
+  .func("$_fast_int_sub")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(i32.const(TYPE_TAG.INT), i64.sub(local.get("$x_val"), local.get("$y_val")));
+
+export const FAST_INT_MUL_FX = wasm
+  .func("$_fast_int_mul")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(i32.const(TYPE_TAG.INT), i64.mul(local.get("$x_val"), local.get("$y_val")));
+
+export const FAST_INT_DIV_FX = wasm
+  .func("$_fast_int_div")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  // i64.div_s truncates toward zero — matches this backend's integer division semantics.
+  .body(i32.const(TYPE_TAG.INT), i64.div_s(local.get("$x_val"), local.get("$y_val")));
+
+// PROTOTYPE: Fast-path helper for known-integer modulo.
+//
+// wasm-util does not expose i64.rem_s, so we implement truncated remainder via the
+// algebraic identity:  rem_s(x, y) = x - div_s(x, y) * y
+// This is C-style truncated remainder (result sign = dividend sign), NOT Python
+// floor-division semantics (result sign = divisor sign). They diverge for negative
+// operands:
+//   Python: -7 % 3 = 2   (floor-division, result = divisor sign)
+//   C/Wasm: -7 % 3 = -1  (truncated, result = dividend sign)
+//
+// For BOOL_BIT operands (values 0 or 1), payloads are always non-negative so the
+// semantics are identical. For INT_BIT operands with potential negative values,
+// a production implementation MUST guard on IntRef before using this fast path,
+// or implement a proper floor-mod correction:  if (rem != 0 && sign(rem) != sign(y)) rem += y
+export const FAST_INT_MOD_FX = wasm
+  .func("$_fast_int_mod")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  // rem_s(x, y) = x - div_s(x, y) * y  (truncated, C-style)
+  .body(
+    i32.const(TYPE_TAG.INT),
+    i64.sub(
+      local.get("$x_val"),
+      i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val")),
+    ),
+  );
+
+// Python floor-division modulo for signed integer operands.
+// Truncated remainder diverges from floor-mod for negative values:
+//   Python: -7 % 3 = 2    (result sign = divisor sign)
+//   C/Wasm: -7 % 3 = -1   (result sign = dividend sign)
+// Algorithm: r = x - div_s(x,y)*y; if r != 0 && sign(r) != sign(y): r += y
+export const GENERIC_FLOOR_MOD_FX = wasm
+  .func("$_py_floor_mod")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .locals({ $rem: i64 })
+  .body(
+    local.set("$rem",
+      i64.sub(
+        local.get("$x_val"),
+        i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val"))
+      )
+    ),
+    // Floor correction: if rem != 0 and sign(rem) != sign(divisor), add divisor.
+    // i64.ne returns i32 (0 or 1) — no wrapping needed for i32.and.
+    wasm.if(
+      i32.and(
+        i64.ne(local.get("$rem"), i64.const(0)),
+        i64.ne(
+          i64.shr_s(local.get("$rem"), i64.const(63)),
+          i64.shr_s(local.get("$y_val"), i64.const(63))
+        )
+      )
+    ).then(
+      local.set("$rem", i64.add(local.get("$rem"), local.get("$y_val")))
+    ),
+    wasm.return(i32.const(TYPE_TAG.INT), local.get("$rem")),
+  );
+
 // binary operation function
 export const ARITHMETIC_OP_FX = wasm
   .func("$_py_arith_op")
@@ -480,7 +584,7 @@ export const STRING_COMPARE_FX = wasm
       ),
     ),
 
-    wasm.return(i32.sub(local.get("$y_len"), local.get("$x_len"))),
+    wasm.return(i32.sub(local.get("$x_len"), local.get("$y_len"))),
   );
 
 export const COMPARISON_OP_FX = wasm
@@ -637,6 +741,46 @@ export const COMPARISON_OP_FX = wasm
     wasm.call("$_log_error").args(i32.const(ERROR_MAP.COMPARE_OP_UNKNOWN_TYPE[0])),
     wasm.unreachable(),
   );
+
+// Fast-path comparison helpers for known-integer or known-boolean operands.
+// Each takes (i32 x_tag, i64 x_val, i32 y_tag, i64 y_val) — tags match the tagged-value
+// calling convention but are unused; the caller guarantees INT_BIT or BOOL_BIT operands.
+// i64.{op} returns i32 (0 or 1); MAKE_BOOL_FX converts that to (BOOL_TAG, i64 0|1).
+export const FAST_INT_EQ_FX = wasm
+  .func("$_fast_int_eq")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.eq(local.get("$x_val"), local.get("$y_val"))));
+
+export const FAST_INT_NEQ_FX = wasm
+  .func("$_fast_int_neq")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.ne(local.get("$x_val"), local.get("$y_val"))));
+
+export const FAST_INT_LT_FX = wasm
+  .func("$_fast_int_lt")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.lt_s(local.get("$x_val"), local.get("$y_val"))));
+
+export const FAST_INT_LTE_FX = wasm
+  .func("$_fast_int_lte")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.le_s(local.get("$x_val"), local.get("$y_val"))));
+
+export const FAST_INT_GT_FX = wasm
+  .func("$_fast_int_gt")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.gt_s(local.get("$x_val"), local.get("$y_val"))));
+
+export const FAST_INT_GTE_FX = wasm
+  .func("$_fast_int_gte")
+  .params({ $x_tag: i32, $x_val: i64, $y_tag: i32, $y_val: i64 })
+  .results(i32, i64)
+  .body(wasm.call(MAKE_BOOL_FX).args(i64.ge_s(local.get("$x_val"), local.get("$y_val"))));
 
 // bool related functions
 
@@ -869,9 +1013,23 @@ export const nativeFunctions = [
   SET_PAIR_TAIL_FX,
   LOG_FX,
   NEG_FX,
+  FAST_BOOL_NOT_FX,
+  FAST_INT_NEG_FX,
   ARITHMETIC_OP_FX,
+  FAST_INT_ADD_FX,
+  FAST_INT_SUB_FX,
+  FAST_INT_MUL_FX,
+  FAST_INT_DIV_FX,
+  FAST_INT_MOD_FX,
+  GENERIC_FLOOR_MOD_FX,
   STRING_COMPARE_FX,
   COMPARISON_OP_FX,
+  FAST_INT_EQ_FX,
+  FAST_INT_NEQ_FX,
+  FAST_INT_LT_FX,
+  FAST_INT_LTE_FX,
+  FAST_INT_GT_FX,
+  FAST_INT_GTE_FX,
   BOOLISE_FX,
   BOOL_NOT_FX,
   ALLOC_ENV_FX,

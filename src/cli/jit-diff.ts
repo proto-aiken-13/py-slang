@@ -4,11 +4,14 @@
  *
  * Usage:
  *   npm run jit-diff -- <file.py>
+ *   npm run jit-diff -- --backend svml <file.py>
  *   echo "def f(x): return x+1\nf(1)" | npm run jit-diff
  *
- * Backend:
- *   svml — diffs the SVML bytecode instruction stream.
- *          Highlights ADDG->ADDF, LDLG->LDLF, etc. specializations.
+ * Backends:
+ *   wasm (default) — diffs the WAT (WebAssembly Text) output.
+ *                    Highlights $_fast_int_add/sub/mul/div promotions.
+ *   svml           — diffs the SVML bytecode instruction stream.
+ *                    Highlights ADDG→ADDF, LDLG→LDLF, etc. specializations.
  */
 
 // __DEBUG__ is injected by rollup in production builds; define it for tsx/ts-node.
@@ -20,6 +23,8 @@ import { parse } from "../parser/parser-adapter";
 import { SVMLBackend } from "../vm/svml-backend";
 import { SVMLCompiler } from "../vm/svml-compiler";
 import { specialize } from "../specialization/enrich";
+import { BuilderGenerator } from "../wasm-compiler/builderGenerator";
+import { WatGenerator } from "@sourceacademy/wasm-util";
 import OpCodes from "../vm/opcodes";
 import type { StmtNS } from "../ast-types";
 import type { SVMLProgram } from "../vm/types";
@@ -32,6 +37,80 @@ const GREEN  = (s: string) => `\x1b[32m${s}\x1b[0m`;
 const CYAN   = (s: string) => `\x1b[36m${s}\x1b[0m`;
 const YELLOW = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const BOLD   = (s: string) => `\x1b[1m${s}\x1b[0m`;
+
+// ── WAT generation ────────────────────────────────────────────────────────────
+
+/**
+ * Split compact WAT into a map of function-name → body string.
+ * We use this to diff at the function level: only show functions that changed.
+ */
+function extractFunctions(wat: string): Map<string, string> {
+  const funcs = new Map<string, string>();
+  // Each top-level (func $name ...) in the compact WAT starts with "(func $"
+  const re = /\(func (\$[\w]+)/g;
+  let match: RegExpExecArray | null;
+  const starts: Array<{ name: string; pos: number }> = [];
+
+  while ((match = re.exec(wat)) !== null) {
+    starts.push({ name: match[1], pos: match.index });
+  }
+
+  for (let i = 0; i < starts.length; i++) {
+    const { name, pos } = starts[i];
+    const end = i + 1 < starts.length ? starts[i + 1].pos : wat.length;
+    // Trim the trailing space/paren that belongs to the module wrapper
+    let body = wat.slice(pos, end).trimEnd();
+    // Drop any trailing ") " or ")" that's the module close
+    if (body.endsWith(")") && countParens(body) < 0) body = body.slice(0, -1).trimEnd();
+    funcs.set(name, body);
+  }
+  return funcs;
+}
+
+function countParens(s: string): number {
+  let n = 0;
+  for (const c of s) { if (c === "(") n++; else if (c === ")") n--; }
+  return n;
+}
+
+/**
+ * Pretty-print a single function body: one token per line, indented by depth.
+ * Only applied to changed functions so indentation is consistent within a hunk.
+ */
+function prettyFunc(body: string): string {
+  const tokens = body.match(/[()]|[^() ]+/g) ?? [];
+  const lines: string[] = [];
+  let depth = 0;
+  let line = "";
+
+  for (const tok of tokens) {
+    if (tok === "(") {
+      if (line.trim()) { lines.push("  ".repeat(depth) + line.trim()); line = ""; }
+      line = "(";
+      depth++;
+    } else if (tok === ")") {
+      depth = Math.max(0, depth - 1);
+      if (line.trim() && line.trim() !== "(") {
+        lines.push("  ".repeat(depth) + line.trim() + ")");
+        line = "";
+      } else {
+        line = (line + ")").trim();
+      }
+    } else {
+      line += (line.endsWith("(") ? "" : " ") + tok;
+    }
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines.join("\n");
+}
+
+/** Compile AST → compact WAT string (with named calls). */
+async function toCompactWat(ast: StmtNS.FileInput, annotations?: WeakMap<object, unknown>): Promise<string> {
+  const gen = new BuilderGenerator();
+  if (annotations) gen.withAnnotations(annotations as WeakMap<object, import("../types/abstract-value").AbstractValue>);
+  const ir = gen.visit(ast);
+  return new WatGenerator().visit(ir) as string;
+}
 
 // ── SVML IR formatting ────────────────────────────────────────────────────────
 
@@ -82,6 +161,7 @@ function toSvmlProgram(ast: StmtNS.FileInput): SVMLProgram {
 
 // ── Function-level diff ───────────────────────────────────────────────────────
 
+const FAST_INT_RE = /fast_int_(add|sub|mul|div|mod|eq|neq|lt|lte|gt|gte|neg)|fast_bool_not/;
 const CONTEXT = 2;
 
 /**
@@ -155,6 +235,7 @@ function diffFunctions(
   before: Map<string, string>,
   after: Map<string, string>,
   highlightRe: RegExp,
+  pretty: (s: string) => string = s => s,
 ): void {
   const allNames = new Set([...before.keys(), ...after.keys()]);
   let totalChanged = 0;
@@ -167,8 +248,8 @@ function diffFunctions(
 
     const { changed, specializations } = diffFunc(
       name,
-      bBefore || "(not present)",
-      bAfter  || "(not present)",
+      bBefore ? pretty(bBefore) : "(not present)",
+      bAfter  ? pretty(bAfter)  : "(not present)",
       highlightRe,
     );
     if (changed) {
@@ -197,13 +278,19 @@ async function main() {
   const program = new Command();
   program
     .name("jit-diff")
-    .description("Diff SVML IR output before and after JIT specialization")
+    .description("Diff IR output before and after JIT specialization")
     .argument("[file]", "Python source file (reads stdin if omitted)")
     .option("--full", "print full IR for both passes instead of a diff")
+    .option("--backend <name>", "backend to diff: wasm (default) or svml", "wasm")
     .parse(process.argv);
 
   const [file] = program.args;
-  const opts = program.opts<{ full: boolean }>();
+  const opts = program.opts<{ full: boolean; backend: string }>();
+
+  if (opts.backend !== "wasm" && opts.backend !== "svml") {
+    console.error(RED(`Unknown backend '${opts.backend}'. Valid options: wasm, svml`));
+    process.exit(1);
+  }
 
   const src = file
     ? fs.readFileSync(file, "utf-8")
@@ -233,26 +320,50 @@ async function main() {
   compiler.compileProgram(ast);
   const enriched = specialize(ast, typeInfo, fn => compiler.createSlotLookupForFunction(fn));
 
-  const beforeProg = toSvmlProgram(ast);
-  const afterProg  = toSvmlProgram(enriched);
+  if (opts.backend === "svml") {
+    const beforeProg = toSvmlProgram(ast);
+    const afterProg  = toSvmlProgram(enriched);
 
-  if (opts.full) {
-    console.log(BOLD("=== BEFORE (generic SVML) ==="));
-    for (const [name, body] of formatSvmlFunctions(beforeProg)) {
-      console.log(CYAN(`fn ${name}:`)); console.log(body);
+    if (opts.full) {
+      console.log(BOLD("=== BEFORE (generic SVML) ==="));
+      for (const [name, body] of formatSvmlFunctions(beforeProg)) {
+        console.log(CYAN(`fn ${name}:`)); console.log(body);
+      }
+      console.log(BOLD("\n=== AFTER (JIT-specialized SVML) ==="));
+      for (const [name, body] of formatSvmlFunctions(afterProg)) {
+        console.log(CYAN(`fn ${name}:`)); console.log(body);
+      }
+      return;
     }
-    console.log(BOLD("\n=== AFTER (JIT-specialized SVML) ==="));
-    for (const [name, body] of formatSvmlFunctions(afterProg)) {
-      console.log(CYAN(`fn ${name}:`)); console.log(body);
-    }
+
+    console.log(BOLD("JIT specialization diff") + "  " +
+      CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[svml]"));
+    console.log(RED("  - generic") + "   " + BOLD(GREEN("+ specialized (bold = typed op)")));
+    console.log("─".repeat(60));
+    diffFunctions(formatSvmlFunctions(beforeProg), formatSvmlFunctions(afterProg), SVML_SPECIALIZED_RE);
     return;
   }
 
+  // ── wasm backend (default) ─────────────────────────────────────────────────
+  const beforeWat = await toCompactWat(ast);
+  const afterWat  = await toCompactWat(enriched, enriched.typeAnnotations);
+
+  if (opts.full) {
+    console.log(BOLD("=== BEFORE (generic) ==="));
+    console.log(beforeWat);
+    console.log(BOLD("\n=== AFTER (JIT-specialized) ==="));
+    console.log(afterWat);
+    return;
+  }
+
+  const beforeFuncs = extractFunctions(beforeWat);
+  const afterFuncs  = extractFunctions(afterWat);
+
   console.log(BOLD("JIT specialization diff") + "  " +
-    CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[svml]"));
-  console.log(RED("  - generic") + "   " + BOLD(GREEN("+ specialized (bold = typed op)")));
+    CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[wasm]"));
+  console.log(RED("  - generic") + "   " + BOLD(GREEN("+ specialized (bold = fast-int)")));
   console.log("─".repeat(60));
-  diffFunctions(formatSvmlFunctions(beforeProg), formatSvmlFunctions(afterProg), SVML_SPECIALIZED_RE);
+  diffFunctions(beforeFuncs, afterFuncs, FAST_INT_RE, prettyFunc);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

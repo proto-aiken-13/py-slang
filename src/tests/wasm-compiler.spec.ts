@@ -147,6 +147,16 @@ describe("Comparison operator tests (int, float, complex, string)", () => {
     const pythonCode = `"x" < 3`;
     await expect(compileToWasmAndRun(pythonCode)).rejects.toThrow();
   });
+
+  it('"a" < "ab" is True (shorter string is less)', async () => {
+    const result = await compileToWasmAndRun('"a" < "ab"');
+    expect(result).toEqual([TYPE_TAG.BOOL, BigInt(1)]);
+  });
+
+  it('"ab" > "a" is True', async () => {
+    const result = await compileToWasmAndRun('"ab" > "a"');
+    expect(result).toEqual([TYPE_TAG.BOOL, BigInt(1)]);
+  });
 });
 
 describe("Boolean tests", () => {
