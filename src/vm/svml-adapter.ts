@@ -58,7 +58,7 @@ export class SVMLAdapter implements BackendAdapter<SVMLBoxType> {
       }
       case "float": {
         const v = python.value;
-        if (Number.isNaN(v)) return floatValue(); // NaN has no meaningful sign → top
+        if (Number.isNaN(v)) return floatValue(); // NaN has no meaningful sign -> top
         if (v > 0) return positiveFloat();
         if (v < 0) return negativeFloat();
         return zeroFloat();
