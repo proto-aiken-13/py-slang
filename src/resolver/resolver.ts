@@ -6,159 +6,27 @@ import { TokenType } from "../tokens";
 import { ResolverErrors } from "./errors";
 import { FeatureValidator } from "../validator/types";
 
-import levenshtein from "fast-levenshtein";
+import levenshtein from 'fast-levenshtein';
 // const levenshtein = require('fast-levenshtein');
+
+export type FunctionEnvironments = Map<StmtNS.FileInput | StmtNS.FunctionDef | ExprNS.Lambda | ExprNS.MultiLambda, Environment>;
 
 const RedefineableTokenSentinel = new Token(TokenType.AT, "", 0, 0, 0);
 
 export class Environment {
-  source: string;
-  // The parent of this environment
-  enclosing: Environment | null;
-  names: Map<string, Token>;
-  // Function names in the environment.
-  functions: Set<string>;
-  // Names that are from import bindings, like 'y' in `from x import y`.
-  // This only set at the top level environment. Child environments do not
-  // copy this field.
-  moduleBindings: Set<string>;
-  definedNames: Set<string>;
-  constructor(source: string, enclosing: Environment | null, names: Map<string, Token>) {
-    this.source = source;
-    this.enclosing = enclosing;
-    this.names = names;
-    this.functions = new Set();
-    this.moduleBindings = new Set();
-    this.definedNames = new Set();
-  }
+    source: string;
+    // The parent of this environment
+    enclosing: Environment | null;
+    names: Map<string, Token>;
+    // Function names in the environment.
+    functions: Set<string>;
+    // Names that are from import bindings, like 'y' in `from x import y`.
+    // This only set at the top level environment. Child environments do not
+    // copy this field.
+    moduleBindings: Set<string>;
+    definedNames: Set<string>;
 
-  /*
-   * Does a full lookup up the environment chain for a name.
-   * Returns the distance of the name from the current environment.
-   * If name isn't found, return -1.
-   * */
-  lookupName(identifier: Token): number {
-    const name = identifier.lexeme;
-    let distance = 0;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    let curr: Environment | null = this;
-    while (curr !== null) {
-      if (curr.names.has(name)) {
-        break;
-      }
-      distance += 1;
-      curr = curr.enclosing;
-    }
-    return curr === null ? -1 : distance;
-  }
-
-  /* Looks up the name but only for the current environment. */
-  lookupNameCurrentEnv(identifier: Token): Token | undefined {
-    return this.names.get(identifier.lexeme);
-  }
-  lookupNameCurrentEnvWithError(identifier: Token) {
-    if (this.lookupName(identifier) < 0) {
-      throw new ResolverErrors.NameNotFoundError(
-        identifier.line,
-        identifier.col,
-        this.source,
-        identifier.indexInSource,
-        identifier.indexInSource + identifier.lexeme.length,
-        this.suggestName(identifier),
-      );
-    }
-  }
-  lookupNameParentEnvWithError(identifier: Token) {
-    const name = identifier.lexeme;
-    const parent = this.enclosing;
-
-    if (parent === null || !parent.names.has(name)) {
-      throw new ResolverErrors.NameNotFoundError(
-        identifier.line,
-        identifier.col,
-        this.source,
-        identifier.indexInSource,
-        identifier.indexInSource + name.length,
-        this.suggestName(identifier),
-      );
-    }
-  }
-  declareName(identifier: Token) {
-    this.names.set(identifier.lexeme, identifier);
-    this.definedNames.add(identifier.lexeme);
-  }
-  // Same as declareName but allowed to re-declare later.
-  declarePlaceholderName(identifier: Token) {
-    const lookup = this.lookupNameCurrentEnv(identifier);
-    if (lookup !== undefined) {
-      throw new ResolverErrors.NameReassignmentError(
-        identifier.line,
-        identifier.col,
-        this.source,
-        identifier.indexInSource,
-        identifier.indexInSource + identifier.lexeme.length,
-        lookup,
-      );
-    }
-    this.names.set(identifier.lexeme, RedefineableTokenSentinel);
-  }
-  suggestNameCurrentEnv(identifier: Token): string | null {
-    const name = identifier.lexeme;
-    let minDistance = Infinity;
-    let minName = null;
-    for (const declName of this.names.keys()) {
-      const dist = levenshtein.get(name, declName);
-      if (dist < minDistance) {
-        minDistance = dist;
-        minName = declName;
-      }
-    }
-    return minName;
-  }
-  /*
-   * Finds name closest to name in all environments up to builtin environment.
-   * Calculated using min levenshtein distance.
-   * */
-  suggestName(identifier: Token): string | null {
-    const name = identifier.lexeme;
-    let minDistance = Infinity;
-    let minName = null;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    let curr: Environment | null = this;
-    while (curr !== null) {
-      for (const declName of curr.names.keys()) {
-        const dist = levenshtein.get(name, declName);
-        if (dist < minDistance) {
-          minDistance = dist;
-          minName = declName;
-        }
-      }
-      curr = curr.enclosing;
-    }
-    if (minDistance >= 4) {
-      // This is pretty far, so just return null
-      return null;
-    }
-    return minName;
-  }
-}
-export class Resolver implements StmtNS.Visitor<void>, ExprNS.Visitor<void> {
-  source: string;
-  ast: Stmt;
-  // change the environment to be suite scope as in python
-  environment: Environment | null;
-  functionScope: Environment | null;
-  private validators: FeatureValidator[];
-
-  constructor(source: string, ast: Stmt, validators: FeatureValidator[] = []) {
-    this.source = source;
-    this.ast = ast;
-    this.validators = validators;
-    // The global environment
-    this.environment = new Environment(
-      source,
-      null,
-      new Map([
+    static GlobalEnvironment: Environment = new Environment("", null, new Map([
         // misc library
         ["_int", new Token(TokenType.NAME, "_int", 0, 0, 0)],
         ["_int_from_string", new Token(TokenType.NAME, "_int_from_string", 0, 0, 0)],
@@ -169,19 +37,21 @@ export class Resolver implements StmtNS.Visitor<void>, ExprNS.Visitor<void> {
         ["isinstance", new Token(TokenType.NAME, "isinstance", 0, 0, 0)],
         ["max", new Token(TokenType.NAME, "max", 0, 0, 0)],
         ["min", new Token(TokenType.NAME, "min", 0, 0, 0)],
+        ["len", new Token(TokenType.NAME, "len", 0, 0, 0)],
         ["print", new Token(TokenType.NAME, "print", 0, 0, 0)],
         ["random_random", new Token(TokenType.NAME, "random_random", 0, 0, 0)],
+        ["range", new Token(TokenType.NAME, "range", 0, 0, 0)],
         ["round", new Token(TokenType.NAME, "round", 0, 0, 0)],
         ["str", new Token(TokenType.NAME, "str", 0, 0, 0)],
-        ["time_time", new Token(TokenType.NAME, "time_time", 0, 0, 0)],
-
+        ["time_time", new Token(TokenType.NAME, "time_time", 0, 0, 0)],            
+        
         // math constants
         ["math_pi", new Token(TokenType.NAME, "math_pi", 0, 0, 0)],
         ["math_e", new Token(TokenType.NAME, "math_e", 0, 0, 0)],
         ["math_inf", new Token(TokenType.NAME, "math_inf", 0, 0, 0)],
         ["math_nan", new Token(TokenType.NAME, "math_nan", 0, 0, 0)],
         ["math_tau", new Token(TokenType.NAME, "math_tau", 0, 0, 0)],
-
+        
         // math library
         ["math_acos", new Token(TokenType.NAME, "math_acos", 0, 0, 0)],
         ["math_acosh", new Token(TokenType.NAME, "math_acosh", 0, 0, 0)],
@@ -231,294 +101,458 @@ export class Resolver implements StmtNS.Visitor<void>, ExprNS.Visitor<void> {
         ["math_tan", new Token(TokenType.NAME, "math_tan", 0, 0, 0)],
         ["math_tanh", new Token(TokenType.NAME, "math_tanh", 0, 0, 0)],
         ["math_trunc", new Token(TokenType.NAME, "math_trunc", 0, 0, 0)],
-        ["math_ulp", new Token(TokenType.NAME, "math_ulp", 0, 0, 0)],
-      ]),
-    );
-    this.functionScope = null;
-  }
+        ["math_ulp", new Token(TokenType.NAME, "math_ulp", 0, 0, 0)]   
+    ]));
 
-  private runValidators(node: StmtNS.Stmt | ExprNS.Expr): void {
-    for (const v of this.validators) v.validate(node, this.environment ?? undefined);
-  }
-
-  resolve(stmt: Stmt[] | Stmt | Expr[] | Expr | null) {
-    if (stmt === null) {
-      return;
+    constructor(source: string, enclosing: Environment | null, names: Map<string, Token>) {
+        this.source = source;
+        this.enclosing = enclosing;
+        this.names = names;
+        this.functions = new Set();
+        this.moduleBindings = new Set();
+        this.definedNames = new Set();
     }
-    if (stmt instanceof Array) {
-      // Resolve all top-level functions first. Python allows functions declared after
-      // another function to be used in that function.
-      for (const st of stmt) {
-        if (st instanceof StmtNS.FunctionDef) {
-          this.environment?.declarePlaceholderName(st.name);
+
+    /*
+    * Does a full lookup up the environment chain for a name.
+    * Returns the distance of the name from the current environment.
+    * If name isn't found, return -1.
+    * */
+    lookupName(identifier: Token): number {
+        const name = identifier.lexeme;
+        let distance = 0;
+        let curr: Environment | null = this;
+        while (curr !== null) {
+            if (curr.names.has(name)) {
+                break;
+            }
+            distance += 1;
+            curr = curr.enclosing;
         }
-      }
-      for (const st of stmt) {
-        st.accept(this);
-      }
-    } else {
-      stmt.accept(this);
+        return (curr === null) ? -1 : distance;
     }
-  }
 
-  varDeclNames(names: Map<string, Token>): Token[] | null {
-    const res = Array.from(names.values()).filter(
-      name =>
-        // Filter out functions and module bindings.
-        // Those will be handled separately, so they don't
-        // need to be hoisted.
-        !this.environment?.functions.has(name.lexeme) &&
-        !this.environment?.moduleBindings.has(name.lexeme),
-    );
-    return res.length === 0 ? null : res;
-  }
-
-  functionVarConstraint(identifier: Token): void {
-    if (this.functionScope == null) {
-      return;
-    }
-    let curr = this.environment;
-    while (curr !== this.functionScope) {
-      if (curr !== null && curr.names.has(identifier.lexeme)) {
-        const token = curr.names.get(identifier.lexeme);
-        if (token === undefined) {
-          throw new Error("placeholder error");
+    /*
+    * Does a full lookup up the environment chain for a name.
+    * Returns the environment where the name is found.
+    * If name isn't found, return null.
+    * */
+    lookupNameEnv(identifier:Token): Environment | null {
+        let curr: Environment | null = this;
+        while (curr !== null) {
+            if (curr.names.has(identifier.lexeme)) {
+                return curr;
+            }
+            curr = curr.enclosing;
         }
-        throw new ResolverErrors.NameReassignmentError(
-          identifier.line,
-          identifier.col,
-          this.source,
-          identifier.indexInSource,
-          identifier.indexInSource + identifier.lexeme.length,
-          token,
+        return null;
+    }
+
+    /* Looks up the name but only for the current environment. */
+    lookupNameCurrentEnv(identifier: Token): Token | undefined {
+        return this.names.get(identifier.lexeme);
+    }
+    lookupNameCurrentEnvWithError(identifier: Token) {
+        if (this.lookupName(identifier) < 0) {
+            throw new ResolverErrors.NameNotFoundError(identifier.line, identifier.col,
+                this.source,
+                identifier.indexInSource,
+                identifier.indexInSource + identifier.lexeme.length,
+                this.suggestName(identifier));
+        }
+    }
+    lookupNameParentEnvWithError(identifier: Token) {
+        const name = identifier.lexeme;
+        let parent = this.enclosing;
+        
+        if (parent === null || !parent.names.has(name)) {
+            throw new ResolverErrors.NameNotFoundError(identifier.line, identifier.col,
+                this.source,
+                identifier.indexInSource,
+                identifier.indexInSource + name.length,
+                this.suggestName(identifier));
+        }
+
+    }
+    declareName(identifier: Token) {
+        this.names.set(identifier.lexeme, identifier);
+        this.definedNames.add(identifier.lexeme);
+    }
+    // Same as declareName but allowed to re-declare later.
+    declarePlaceholderName(identifier: Token) {
+        const lookup = this.lookupNameCurrentEnv(identifier);
+        if (lookup !== undefined) {
+            throw new ResolverErrors.NameReassignmentError(identifier.line, identifier.col,
+                this.source,
+                identifier.indexInSource,
+                identifier.indexInSource + identifier.lexeme.length,
+                lookup);
+
+        }
+        this.names.set(identifier.lexeme, RedefineableTokenSentinel);
+    }    
+    suggestNameCurrentEnv(identifier: Token): string | null {
+        const name = identifier.lexeme;
+        let minDistance = Infinity;
+        let minName = null;
+        for (const declName of this.names.keys()) {
+            const dist = levenshtein.get(name, declName);
+            if (dist < minDistance) {
+                minDistance = dist;
+                minName = declName;
+            }
+        }
+        return minName;
+    }
+    /*
+    * Finds name closest to name in all environments up to builtin environment.
+    * Calculated using min levenshtein distance.
+    * */
+    suggestName(identifier: Token): string | null {
+        const name = identifier.lexeme;
+        let minDistance = Infinity;
+        let minName = null;
+        let curr: Environment | null = this;
+        while (curr !== null) {
+            for (const declName of curr.names.keys()) {
+                const dist = levenshtein.get(name, declName);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    minName = declName;
+                }
+            }
+            curr = curr.enclosing;
+        }
+        if (minDistance >= 4) {
+            // This is pretty far, so just return null
+            return null;
+        }
+        return minName;
+    }
+
+}
+export class Resolver implements StmtNS.Visitor<void>, ExprNS.Visitor<void> {
+    source: string;
+    ast: Stmt;
+    // change the environment to be suite scope as in python
+    environment: Environment | null;
+    functionScope: Environment | null;
+    // Map to store environments for each function/lambda
+    functionEnvironments: FunctionEnvironments;
+    private validators: FeatureValidator[];
+
+    constructor(source: string, ast: Stmt, validators: FeatureValidator[] = []) {
+        this.source = source;
+        this.ast = ast;
+        this.functionEnvironments = new Map();
+        this.validators = validators;
+        // The global environment
+        this.environment = Environment.GlobalEnvironment;
+        this.functionScope = null;
+    }
+
+    private runValidators(node: StmtNS.Stmt | ExprNS.Expr): void {
+        for (const v of this.validators) v.validate(node, this.environment ?? undefined);
+    }
+    
+    resolveEnvironments(program: StmtNS.FileInput): FunctionEnvironments {
+        this.resolve(program);
+        return this.functionEnvironments;
+    }
+
+
+    resolve(stmt: Stmt[] | Stmt | Expr[] | Expr | null) {
+        if (stmt === null) {
+            return;
+        }
+        if (stmt instanceof Array) {
+            // Resolve all top-level functions first. Python allows functions declared after
+            // another function to be used in that function.
+            for (const st of stmt) {
+                if (st instanceof StmtNS.FunctionDef) {
+                    this.environment?.declarePlaceholderName(st.name);
+                }
+            }
+            for (const st of stmt) {
+                st.accept(this);
+            }
+        } else {
+            stmt.accept(this);
+        }
+    }
+
+    varDeclNames(names: Map<string, Token>): Token[] | null {
+        const res = Array.from(names.values())
+            .filter(name => (
+                // Filter out functions and module bindings.
+                // Those will be handled separately, so they don't
+                // need to be hoisted.
+                !this.environment?.functions.has(name.lexeme)
+                && !this.environment?.moduleBindings.has(name.lexeme)
+            ));
+        return res.length === 0 ? null : res;
+    }
+
+    functionVarConstraint(identifier: Token): void {
+        if (this.functionScope == null) {
+            return;
+        }
+        let curr = this.environment;
+        while (curr !== this.functionScope) {
+            if (curr !== null && curr.names.has(identifier.lexeme)) {
+                const token = curr.names.get(identifier.lexeme);
+                if (token === undefined) {
+                    throw new Error("placeholder error")
+                }
+                throw new ResolverErrors.NameReassignmentError(identifier.line, identifier.col,
+                    this.source,
+                    identifier.indexInSource,
+                    identifier.indexInSource + identifier.lexeme.length,
+                    token);
+            }
+            curr = curr?.enclosing ?? null;
+        }
+    }
+
+    //// STATEMENTS
+    visitFileInputStmt(stmt: StmtNS.FileInput): void {
+        this.runValidators(stmt);
+        // Create a new environment.
+        const oldEnv = this.environment;
+        this.environment = new Environment(this.source, this.environment, new Map());
+        this.resolve(stmt.statements);
+        this.functionEnvironments.set(stmt, this.environment);
+        // Grab identifiers from that new environment. That are NOT functions.
+        // stmt.varDecls = this.varDeclNames(this.environment.names)
+        this.environment = oldEnv;
+    }
+
+    visitIndentCreation(_stmt: StmtNS.Indent): void {
+        this.runValidators(_stmt);
+        // Create a new environment
+        this.environment = new Environment(this.source, this.environment, new Map());
+    }
+
+    visitDedentCreation(_stmt: StmtNS.Dedent): void {
+        this.runValidators(_stmt);
+        // Switch to the previous environment.
+        if (this.environment?.enclosing !== undefined) {
+            this.environment = this.environment.enclosing;
+        }
+    }
+
+    visitFunctionDefStmt(stmt: StmtNS.FunctionDef) {
+        this.runValidators(stmt);
+        this.environment?.declareName(stmt.name);
+        this.environment?.functions.add(stmt.name.lexeme);
+
+        // Create a new environment.
+        const oldEnv = this.environment;
+        // Assign the parameters to the new environment.
+        const newEnv = new Map(
+            stmt.parameters.map(param => [param.lexeme, param])
         );
-      }
-      curr = curr?.enclosing ?? null;
+        this.environment = new Environment(this.source, this.environment, newEnv);
+        
+        // Store this environment for the function
+        this.functionEnvironments.set(stmt, this.environment);
+        
+        this.functionScope = this.environment;
+        this.resolve(stmt.body);
+        // Grab identifiers from that new environment. That are NOT functions.
+        // stmt.varDecls = this.varDeclNames(this.environment.names)
+        // Restore old environment
+        this.functionScope = null;
+        this.environment = oldEnv;
     }
-  }
 
-  //// STATEMENTS
-  visitFileInputStmt(stmt: StmtNS.FileInput): void {
-    this.runValidators(stmt);
-    // Create a new environment.
-    const oldEnv = this.environment;
-    this.environment = new Environment(this.source, this.environment, new Map());
-    this.resolve(stmt.statements);
-    // Grab identifiers from that new environment. That are NOT functions.
-    // stmt.varDecls = this.varDeclNames(this.environment.names)
-    this.environment = oldEnv;
-  }
-
-  visitIndentCreation(_stmt: StmtNS.Indent): void {
-    this.runValidators(_stmt);
-    // Create a new environment
-    this.environment = new Environment(this.source, this.environment, new Map());
-  }
-
-  visitDedentCreation(_stmt: StmtNS.Dedent): void {
-    this.runValidators(_stmt);
-    // Switch to the previous environment.
-    if (this.environment?.enclosing !== undefined) {
-      this.environment = this.environment.enclosing;
+    visitAnnAssignStmt(stmt: StmtNS.AnnAssign): void {
+        this.runValidators(stmt);
+        this.resolve(stmt.ann);
+        this.resolve(stmt.value);
+        this.functionVarConstraint(stmt.target.name);
+        this.environment?.declareName(stmt.target.name);
     }
-  }
 
-  visitFunctionDefStmt(stmt: StmtNS.FunctionDef) {
-    this.runValidators(stmt);
-    this.environment?.declareName(stmt.name);
-    this.environment?.functions.add(stmt.name.lexeme);
-
-    // Create a new environment.
-    const oldEnv = this.environment;
-    // Assign the parameters to the new environment.
-    const newEnv = new Map(stmt.parameters.map(param => [param.lexeme, param]));
-    this.environment = new Environment(this.source, this.environment, newEnv);
-    // const params = new Map(
-    //     stmt.parameters.map(param => [param.lexeme, param])
-    // );
-    // if (this.environment !== null) {
-    //     this.environment.names = params;
-    // }
-    this.functionScope = this.environment;
-    this.resolve(stmt.body);
-    // Grab identifiers from that new environment. That are NOT functions.
-    // stmt.varDecls = this.varDeclNames(this.environment.names)
-    // Restore old environment
-    this.functionScope = null;
-    this.environment = oldEnv;
-  }
-
-  visitAnnAssignStmt(stmt: StmtNS.AnnAssign): void {
-    this.runValidators(stmt);
-    this.resolve(stmt.ann);
-    this.resolve(stmt.value);
-    this.functionVarConstraint(stmt.target.name);
-    this.environment?.declareName(stmt.target.name);
-  }
-
-  visitAssignStmt(stmt: StmtNS.Assign): void {
-    this.runValidators(stmt);
-    const target = stmt.target;
-    if (target instanceof ExprNS.Subscript) {
-      throw new Error("Subscript assignment is not supported in assignment");
+    visitAssignStmt(stmt: StmtNS.Assign): void {
+        this.runValidators(stmt);
+        const target = stmt.target;
+        if (target instanceof ExprNS.Subscript) {
+            throw new Error("Subscript assignment is not supported in assignment");
+        }
+        this.resolve(stmt.value);
+        this.functionVarConstraint(target.name);
+        this.environment?.declareName(target.name);
     }
-    this.resolve(stmt.value);
-    this.functionVarConstraint(target.name);
-    this.environment?.declareName(target.name);
-  }
 
-  visitAssertStmt(stmt: StmtNS.Assert): void {
-    this.runValidators(stmt);
-    this.resolve(stmt.value);
-  }
-  visitForStmt(stmt: StmtNS.For): void {
-    this.runValidators(stmt);
-    this.environment?.declareName(stmt.target);
-    this.resolve(stmt.iter);
-    this.resolve(stmt.body);
-  }
-
-  visitIfStmt(stmt: StmtNS.If): void {
-    this.runValidators(stmt);
-    this.resolve(stmt.condition);
-    this.resolve(stmt.body);
-    this.resolve(stmt.elseBlock);
-  }
-  // @TODO we need to treat all global statements as variable declarations in the global
-  // scope.
-  visitGlobalStmt(stmt: StmtNS.Global): void {
-    this.runValidators(stmt);
-    // Do nothing because global can also be declared in our
-    // own scope.
-  }
-  // @TODO nonlocals mean that any variable following that name in the current env
-  // should not create a variable declaration, but instead point to an outer variable.
-  visitNonLocalStmt(stmt: StmtNS.NonLocal): void {
-    this.runValidators(stmt);
-    this.environment?.lookupNameParentEnvWithError(stmt.name);
-  }
-
-  visitReturnStmt(stmt: StmtNS.Return): void {
-    this.runValidators(stmt);
-    if (stmt.value !== null) {
-      this.resolve(stmt.value);
+    visitAssertStmt(stmt: StmtNS.Assert): void {
+        this.runValidators(stmt);
+        this.resolve(stmt.value);
     }
-  }
-
-  visitWhileStmt(stmt: StmtNS.While): void {
-    this.runValidators(stmt);
-    this.resolve(stmt.condition);
-    this.resolve(stmt.body);
-  }
-  visitSimpleExprStmt(stmt: StmtNS.SimpleExpr): void {
-    this.runValidators(stmt);
-    this.resolve(stmt.expression);
-  }
-
-  visitFromImportStmt(stmt: StmtNS.FromImport): void {
-    this.runValidators(stmt);
-    for (const name of stmt.names) {
-      this.environment?.declareName(name);
-      this.environment?.moduleBindings.add(name.lexeme);
+    visitForStmt(stmt: StmtNS.For): void {
+        this.runValidators(stmt);
+        this.environment?.declareName(stmt.target);
+        this.resolve(stmt.iter);
+        this.resolve(stmt.body);
     }
-  }
 
-  visitContinueStmt(stmt: StmtNS.Continue): void {
-    this.runValidators(stmt);
-  }
-  visitBreakStmt(stmt: StmtNS.Break): void {
-    this.runValidators(stmt);
-  }
-  visitPassStmt(stmt: StmtNS.Pass): void {
-    this.runValidators(stmt);
-  }
+    visitIfStmt(stmt: StmtNS.If): void {
+        this.runValidators(stmt);
+        this.resolve(stmt.condition);
+        this.resolve(stmt.body);
+        this.resolve(stmt.elseBlock);
+    }
+    // @TODO we need to treat all global statements as variable declarations in the global
+    // scope.
+    visitGlobalStmt(stmt: StmtNS.Global): void {
+        this.runValidators(stmt);
+        // Do nothing because global can also be declared in our
+        // own scope.
+    }
+    // @TODO nonlocals mean that any variable following that name in the current env
+    // should not create a variable declaration, but instead point to an outer variable.
+    visitNonLocalStmt(stmt: StmtNS.NonLocal): void {
+        this.runValidators(stmt);
+        this.environment?.lookupNameParentEnvWithError(stmt.name);
+    }
 
-  //// EXPRESSIONS
-  visitVariableExpr(expr: ExprNS.Variable): void {
-    this.runValidators(expr);
-    this.environment?.lookupNameCurrentEnvWithError(expr.name);
-  }
-  visitLambdaExpr(expr: ExprNS.Lambda): void {
-    this.runValidators(expr);
-    // Create a new environment.
-    const oldEnv = this.environment;
-    // Assign the parameters to the new environment.
-    const newEnv = new Map(expr.parameters.map(param => [param.lexeme, param]));
-    this.environment = new Environment(this.source, this.environment, newEnv);
-    this.resolve(expr.body);
-    // Restore old environment
-    this.environment = oldEnv;
-  }
-  visitMultiLambdaExpr(expr: ExprNS.MultiLambda): void {
-    this.runValidators(expr);
-    // Create a new environment.
-    const oldEnv = this.environment;
-    // Assign the parameters to the new environment.
-    const newEnv = new Map(expr.parameters.map(param => [param.lexeme, param]));
-    this.environment = new Environment(this.source, this.environment, newEnv);
-    this.resolve(expr.body);
-    // Grab identifiers from that new environment.
-    expr.varDecls = Array.from(this.environment.names.values());
-    // Restore old environment
-    this.environment = oldEnv;
-  }
-  visitUnaryExpr(expr: ExprNS.Unary): void {
-    this.runValidators(expr);
-    this.resolve(expr.right);
-  }
-  visitGroupingExpr(expr: ExprNS.Grouping): void {
-    this.runValidators(expr);
-    this.resolve(expr.expression);
-  }
-  visitBinaryExpr(expr: ExprNS.Binary): void {
-    this.runValidators(expr);
-    this.resolve(expr.left);
-    this.resolve(expr.right);
-  }
-  visitBoolOpExpr(expr: ExprNS.BoolOp): void {
-    this.runValidators(expr);
-    this.resolve(expr.left);
-    this.resolve(expr.right);
-  }
-  visitCompareExpr(expr: ExprNS.Compare): void {
-    this.runValidators(expr);
-    this.resolve(expr.left);
-    this.resolve(expr.right);
-  }
+    visitReturnStmt(stmt: StmtNS.Return): void {
+        this.runValidators(stmt);
+        if (stmt.value !== null) {
+            this.resolve(stmt.value);
+        }
+    }
 
-  visitCallExpr(expr: ExprNS.Call): void {
-    this.runValidators(expr);
-    this.resolve(expr.callee);
-    this.resolve(expr.args);
-  }
-  visitTernaryExpr(expr: ExprNS.Ternary): void {
-    this.runValidators(expr);
-    this.resolve(expr.predicate);
-    this.resolve(expr.consequent);
-    this.resolve(expr.alternative);
-  }
-  visitNoneExpr(expr: ExprNS.None): void {
-    this.runValidators(expr);
-  }
-  visitLiteralExpr(expr: ExprNS.Literal): void {
-    this.runValidators(expr);
-  }
-  visitBigIntLiteralExpr(expr: ExprNS.BigIntLiteral): void {
-    this.runValidators(expr);
-  }
-  visitComplexExpr(expr: ExprNS.Complex): void {
-    this.runValidators(expr);
-  }
-  visitListExpr(expr: ExprNS.List): void {
-    this.runValidators(expr);
-    this.resolve(expr.elements);
-  }
-  visitSubscriptExpr(expr: ExprNS.Subscript): void {
-    this.runValidators(expr);
-    this.resolve(expr.value);
-    this.resolve(expr.index);
-  }
-  visitStarredExpr(_expr: ExprNS.Starred): void {
-    throw new Error("Starred expressions are not yet supported");
-  }
+    visitWhileStmt(stmt: StmtNS.While): void {
+        this.runValidators(stmt);
+        this.resolve(stmt.condition);
+        this.resolve(stmt.body);
+    }
+    visitSimpleExprStmt(stmt: StmtNS.SimpleExpr): void {
+        this.runValidators(stmt);
+        this.resolve(stmt.expression);
+    }
+
+    visitFromImportStmt(stmt: StmtNS.FromImport): void {
+        this.runValidators(stmt);
+        for (const name of stmt.names) {
+            this.environment?.declareName(name);
+            this.environment?.moduleBindings.add(name.lexeme);
+        }
+    }
+
+    visitContinueStmt(stmt: StmtNS.Continue): void {
+        this.runValidators(stmt);
+    }
+    visitBreakStmt(stmt: StmtNS.Break): void {
+        this.runValidators(stmt);
+    }
+    visitPassStmt(stmt: StmtNS.Pass): void {
+        this.runValidators(stmt);
+    }
+
+
+
+
+
+    //// EXPRESSIONS
+    visitVariableExpr(expr: ExprNS.Variable): void {
+        this.runValidators(expr);
+        this.environment?.lookupNameCurrentEnvWithError(expr.name);
+    }
+    visitLambdaExpr(expr: ExprNS.Lambda): void {
+        this.runValidators(expr);
+        // Create a new environment.
+        const oldEnv = this.environment;
+        // Assign the parameters to the new environment.
+        const newEnv = new Map(
+            expr.parameters.map(param => [param.lexeme, param])
+        );
+        this.environment = new Environment(this.source, this.environment, newEnv);
+        
+        // Store this environment for the lambda
+        this.functionEnvironments.set(expr, this.environment);
+        
+        this.resolve(expr.body);
+        // Restore old environment
+        this.environment = oldEnv;
+    }
+    visitMultiLambdaExpr(expr: ExprNS.MultiLambda): void {
+        this.runValidators(expr);
+        // Create a new environment.
+        const oldEnv = this.environment;
+        // Assign the parameters to the new environment.
+        const newEnv = new Map(
+            expr.parameters.map(param => [param.lexeme, param])
+        );
+        this.environment = new Environment(this.source, this.environment, newEnv);
+        
+        // Store this environment for the multi-lambda
+        this.functionEnvironments.set(expr, this.environment);
+        
+        this.resolve(expr.body);
+        // Grab identifiers from that new environment.
+        expr.varDecls = Array.from(this.environment.names.values());
+        // Restore old environment
+        this.environment = oldEnv;
+    }
+    visitUnaryExpr(expr: ExprNS.Unary): void {
+        this.runValidators(expr);
+        this.resolve(expr.right);
+    }
+    visitGroupingExpr(expr: ExprNS.Grouping): void {
+        this.runValidators(expr);
+        this.resolve(expr.expression);
+    }
+    visitBinaryExpr(expr: ExprNS.Binary): void {
+        this.runValidators(expr);
+        this.resolve(expr.left);
+        this.resolve(expr.right);
+    }
+    visitBoolOpExpr(expr: ExprNS.BoolOp): void {
+        this.runValidators(expr);
+        this.resolve(expr.left);
+        this.resolve(expr.right);
+    }
+    visitCompareExpr(expr: ExprNS.Compare): void {
+        this.runValidators(expr);
+        this.resolve(expr.left);
+        this.resolve(expr.right);
+    }
+
+    visitCallExpr(expr: ExprNS.Call): void {
+        this.runValidators(expr);
+        this.resolve(expr.callee);
+        this.resolve(expr.args);
+    }
+    visitTernaryExpr(expr: ExprNS.Ternary): void {
+        this.runValidators(expr);
+        this.resolve(expr.predicate);
+        this.resolve(expr.consequent);
+        this.resolve(expr.alternative);
+    }
+    visitNoneExpr(expr: ExprNS.None): void {
+        this.runValidators(expr);
+    }
+    visitListExpr(expr: ExprNS.List): void {
+        this.runValidators(expr);
+        this.resolve(expr.elements);
+    }
+    visitSubscriptExpr(expr: ExprNS.Subscript): void {
+        this.runValidators(expr);
+        this.resolve(expr.value);
+        this.resolve(expr.index);
+    }
+    visitLiteralExpr(expr: ExprNS.Literal): void {
+        this.runValidators(expr);
+    }
+    visitBigIntLiteralExpr(expr: ExprNS.BigIntLiteral): void {
+        this.runValidators(expr);
+    }
+    visitComplexExpr(expr: ExprNS.Complex): void {
+        this.runValidators(expr);
+    }
+    visitStarredExpr(expr: ExprNS.Starred): void {
+        throw new Error("Starred expressions are not yet supported");
+    }
 }
