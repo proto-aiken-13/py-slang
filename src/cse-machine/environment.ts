@@ -31,7 +31,7 @@ export const createEnvironment = (
 ): Environment => {
   const environment: Environment = {
     name:
-      closure.node.constructor.name === "FunctionDef"
+      ((closure.node as any).kind ?? closure.node.constructor.name) === "FunctionDef"
         ? (closure.node as StmtNS.FunctionDef).name.lexeme
         : "lambda",
     tail: closure.environment,

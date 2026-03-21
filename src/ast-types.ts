@@ -34,6 +34,7 @@ export namespace ExprNS {
     abstract accept(visitor: Visitor<any>): any;
   }
   export class BigIntLiteral extends Expr {
+    readonly kind = "BigIntLiteral";
     value: string;
     constructor(startToken: Token, endToken: Token, value: string) {
       super(startToken, endToken);
@@ -44,6 +45,7 @@ export namespace ExprNS {
     }
   }
   export class Binary extends Expr {
+    readonly kind = "Binary";
     left: Expr;
     operator: Token;
     right: Expr;
@@ -58,6 +60,7 @@ export namespace ExprNS {
     }
   }
   export class Compare extends Expr {
+    readonly kind = "Compare";
     left: Expr;
     operator: Token;
     right: Expr;
@@ -72,6 +75,7 @@ export namespace ExprNS {
     }
   }
   export class BoolOp extends Expr {
+    readonly kind = "BoolOp";
     left: Expr;
     operator: Token;
     right: Expr;
@@ -86,6 +90,7 @@ export namespace ExprNS {
     }
   }
   export class Grouping extends Expr {
+    readonly kind = "Grouping";
     expression: Expr;
     constructor(startToken: Token, endToken: Token, expression: Expr) {
       super(startToken, endToken);
@@ -96,6 +101,7 @@ export namespace ExprNS {
     }
   }
   export class Literal extends Expr {
+    readonly kind = "Literal";
     value: true | false | number | string;
     constructor(startToken: Token, endToken: Token, value: true | false | number | string) {
       super(startToken, endToken);
@@ -106,6 +112,7 @@ export namespace ExprNS {
     }
   }
   export class Unary extends Expr {
+    readonly kind = "Unary";
     operator: Token;
     right: Expr;
     constructor(startToken: Token, endToken: Token, operator: Token, right: Expr) {
@@ -118,6 +125,7 @@ export namespace ExprNS {
     }
   }
   export class Ternary extends Expr {
+    readonly kind = "Ternary";
     predicate: Expr;
     consequent: Expr;
     alternative: Expr;
@@ -138,6 +146,7 @@ export namespace ExprNS {
     }
   }
   export class Lambda extends Expr {
+    readonly kind = "Lambda";
     parameters: FunctionParam[];
     body: Expr;
     constructor(startToken: Token, endToken: Token, parameters: FunctionParam[], body: Expr) {
@@ -150,6 +159,7 @@ export namespace ExprNS {
     }
   }
   export class MultiLambda extends Expr {
+    readonly kind = "MultiLambda";
     parameters: FunctionParam[];
     body: StmtNS.Stmt[];
     varDecls: Token[];
@@ -170,6 +180,7 @@ export namespace ExprNS {
     }
   }
   export class Variable extends Expr {
+    readonly kind = "Variable";
     name: Token;
     constructor(startToken: Token, endToken: Token, name: Token) {
       super(startToken, endToken);
@@ -180,6 +191,7 @@ export namespace ExprNS {
     }
   }
   export class Call extends Expr {
+    readonly kind = "Call";
     callee: Expr;
     args: Expr[];
     constructor(startToken: Token, endToken: Token, callee: Expr, args: Expr[]) {
@@ -192,6 +204,7 @@ export namespace ExprNS {
     }
   }
   export class List extends Expr {
+    readonly kind = "List";
     elements: Expr[];
     constructor(startToken: Token, endToken: Token, elements: Expr[]) {
       super(startToken, endToken);
@@ -202,6 +215,7 @@ export namespace ExprNS {
     }
   }
   export class Subscript extends Expr {
+    readonly kind = "Subscript";
     value: Expr;
     index: Expr;
     constructor(startToken: Token, endToken: Token, value: Expr, index: Expr) {
@@ -214,6 +228,7 @@ export namespace ExprNS {
     }
   }
   export class None extends Expr {
+    readonly kind = "None";
     constructor(startToken: Token, endToken: Token) {
       super(startToken, endToken);
     }
@@ -222,6 +237,7 @@ export namespace ExprNS {
     }
   }
   export class Complex extends Expr {
+    readonly kind = "Complex";
     value: PyComplexNumber;
     constructor(startToken: Token, endToken: Token, value: string) {
       super(startToken, endToken);
@@ -261,6 +277,7 @@ export namespace StmtNS {
     abstract accept(visitor: Visitor<any>): any;
   }
   export class Pass extends Stmt {
+    readonly kind = "Pass";
     constructor(startToken: Token, endToken: Token) {
       super(startToken, endToken);
     }
@@ -269,6 +286,7 @@ export namespace StmtNS {
     }
   }
   export class Assign extends Stmt {
+    readonly kind = "Assign";
     target: AssignTarget;
     value: ExprNS.Expr;
     constructor(startToken: Token, endToken: Token, target: AssignTarget, value: ExprNS.Expr) {
@@ -281,6 +299,7 @@ export namespace StmtNS {
     }
   }
   export class AnnAssign extends Stmt {
+    readonly kind = "AnnAssign";
     target: ExprNS.Variable;
     value: ExprNS.Expr;
     ann: ExprNS.Expr;
@@ -301,6 +320,7 @@ export namespace StmtNS {
     }
   }
   export class Break extends Stmt {
+    readonly kind = "Break";
     constructor(startToken: Token, endToken: Token) {
       super(startToken, endToken);
     }
@@ -309,6 +329,7 @@ export namespace StmtNS {
     }
   }
   export class Continue extends Stmt {
+    readonly kind = "Continue";
     constructor(startToken: Token, endToken: Token) {
       super(startToken, endToken);
     }
@@ -317,6 +338,7 @@ export namespace StmtNS {
     }
   }
   export class Return extends Stmt {
+    readonly kind = "Return";
     value: ExprNS.Expr | null;
     constructor(startToken: Token, endToken: Token, value: ExprNS.Expr | null) {
       super(startToken, endToken);
@@ -327,6 +349,7 @@ export namespace StmtNS {
     }
   }
   export class FromImport extends Stmt {
+    readonly kind = "FromImport";
     module: Token;
     names: { name: Token; alias: Token | null }[];
     constructor(
@@ -344,6 +367,7 @@ export namespace StmtNS {
     }
   }
   export class Global extends Stmt {
+    readonly kind = "Global";
     name: Token;
     constructor(startToken: Token, endToken: Token, name: Token) {
       super(startToken, endToken);
@@ -354,6 +378,7 @@ export namespace StmtNS {
     }
   }
   export class NonLocal extends Stmt {
+    readonly kind = "NonLocal";
     name: Token;
     constructor(startToken: Token, endToken: Token, name: Token) {
       super(startToken, endToken);
@@ -364,6 +389,7 @@ export namespace StmtNS {
     }
   }
   export class Assert extends Stmt {
+    readonly kind = "Assert";
     value: ExprNS.Expr;
     constructor(startToken: Token, endToken: Token, value: ExprNS.Expr) {
       super(startToken, endToken);
@@ -374,6 +400,7 @@ export namespace StmtNS {
     }
   }
   export class If extends Stmt {
+    readonly kind = "If";
     condition: ExprNS.Expr;
     body: Stmt[];
     elseBlock: Stmt[] | null;
@@ -394,6 +421,7 @@ export namespace StmtNS {
     }
   }
   export class While extends Stmt {
+    readonly kind = "While";
     condition: ExprNS.Expr;
     body: Stmt[];
     constructor(startToken: Token, endToken: Token, condition: ExprNS.Expr, body: Stmt[]) {
@@ -406,6 +434,7 @@ export namespace StmtNS {
     }
   }
   export class For extends Stmt {
+    readonly kind = "For";
     target: Token;
     iter: ExprNS.Expr;
     body: Stmt[];
@@ -426,6 +455,7 @@ export namespace StmtNS {
     }
   }
   export class FunctionDef extends Stmt {
+    readonly kind = "FunctionDef";
     name: Token;
     parameters: FunctionParam[];
     body: Stmt[];
@@ -449,6 +479,7 @@ export namespace StmtNS {
     }
   }
   export class SimpleExpr extends Stmt {
+    readonly kind = "SimpleExpr";
     expression: ExprNS.Expr;
     constructor(startToken: Token, endToken: Token, expression: ExprNS.Expr) {
       super(startToken, endToken);
@@ -459,6 +490,7 @@ export namespace StmtNS {
     }
   }
   export class FileInput extends Stmt {
+    readonly kind = "FileInput";
     statements: Stmt[];
     varDecls: Token[];
     constructor(startToken: Token, endToken: Token, statements: Stmt[], varDecls: Token[]) {

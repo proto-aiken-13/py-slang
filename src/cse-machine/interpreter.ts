@@ -262,7 +262,7 @@ export function* generateCSEMachineStateStream(
     control.pop();
     if (isNode(command)) {
       const node = command as Node;
-      const nodeType = node.constructor.name;
+      const nodeType = (node as any).kind ?? node.constructor.name;
 
       context.runtime.nodes.shift();
       context.runtime.nodes.unshift(command);
@@ -818,7 +818,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
       const closure = callable;
       control.push(instrCreator.resetInstr(instr.srcNode));
 
-      if (closure.node.constructor.name === "FunctionDef") {
+      if (((closure.node as any).kind ?? closure.node.constructor.name) === "FunctionDef") {
         control.push(instrCreator.endOfFunctionBodyInstr(instr.srcNode));
       }
 
@@ -826,7 +826,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
       pushEnvironment(context, newEnv);
 
       const closureNode = closure.node;
-      if (closureNode.constructor.name === "FunctionDef") {
+      if (((closureNode as any).kind ?? closureNode.constructor.name) === "FunctionDef") {
         const bodyStmts = (closureNode as StmtNS.FunctionDef).body.slice().reverse();
         control.push(...bodyStmts);
       } else {

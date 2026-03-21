@@ -149,6 +149,7 @@ export class AstWriter {
 
   private classDef(baseClass: string, name: string, attributes: string[], isEmpty: boolean) {
     this.writeSingleLine(`export class ${name} extends ${baseClass} {`);
+    this.writeSingleLine(`readonly kind = "${name}";`);
     if (!isEmpty) {
       for (const [name, type] of attributes) {
         this.writeSingleLine(`${name}: ${type};`);

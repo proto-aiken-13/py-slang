@@ -347,7 +347,7 @@ ${edges.join("\n")}
    * Create a label for a statement node
    */
   private createStatementLabel(stmt: StmtNS.Stmt): string {
-    const type = stmt.constructor.name;
+    const type = (stmt as any).kind ?? stmt.constructor.name;
     let label = type;
 
     // Add specific information based on statement type
@@ -372,7 +372,7 @@ ${edges.join("\n")}
    * Create a label for an expression node
    */
   private createExpressionLabel(expr: ExprNS.Expr): string {
-    const type = expr.constructor.name;
+    const type = (expr as any).kind ?? expr.constructor.name;
     let label = type;
 
     // Add specific information based on expression type
