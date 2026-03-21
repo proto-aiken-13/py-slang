@@ -264,9 +264,8 @@ export class MissingRequiredPositionalError extends RuntimeSourceError {
       this.missingParamCnt = params;
       this.missingParamName = "";
       const givenParamCnt = args.length;
-      if (this.missingParamCnt === 1 || this.missingParamCnt === 0) {
-      }
-      const msg = `TypeError: ${this.functionName}() takes ${adverb} ${this.missingParamCnt} argument (${givenParamCnt} given)
+      const noun = (this.missingParamCnt === 1 || this.missingParamCnt === 0) ? "argument" : "arguments";
+      const msg = `TypeError: ${this.functionName}() takes ${adverb} ${this.missingParamCnt} ${noun} (${givenParamCnt} given)
 Check the function definition of '${this.functionName}' and make sure to provide all required positional arguments in the correct order.`;
       this.message += msg;
     } else {
@@ -413,7 +412,7 @@ export class StepLimitExceededError extends RuntimeSourceError {
     const name = "StepLimitExceededError";
     const hint = "The evaluation has exceeded the maximum step limit.";
 
-    const offset = fullLine.indexOf(fullLine);
+    const offset = 0;
     const adjustedOffset = offset >= 0 ? offset : 0;
 
     const msg = [
