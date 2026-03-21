@@ -71,19 +71,6 @@ export const createProgramEnvironment = (context: Context, isPrelude: boolean): 
   return createSimpleEnvironment(context, isPrelude ? "prelude" : "programEnvironment");
 };
 
-export const createBlockEnvironment = (
-  context: Context,
-  name = "blockEnvironment",
-): Environment => {
-  return {
-    name,
-    tail: currentEnvironment(context),
-    head: {},
-    heap: new Heap(),
-    id: uniqueId(context),
-  };
-};
-
 // export const handleArrayCreation = (
 //   context: Context,
 //   array: Value[],

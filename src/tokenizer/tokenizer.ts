@@ -171,10 +171,6 @@ export class Tokenizer {
     return res;
   }
 
-  private getBuffer() {
-    console.info(this.lexemeBuffer);
-  }
-
   private addBuffer(c: string) {
     this.lexemeBuffer += c;
   }
@@ -708,8 +704,6 @@ export class Tokenizer {
             // this.advance();
             if (quote_sum === 3) {
               this.subtractBufferForThreeQuoteString();
-              // console.info('endof3quote');
-              // this.getBuffer();
               break;
             }
           }
@@ -922,13 +916,6 @@ export class Tokenizer {
     }
     this.tokens.push(new Token(TokenType.ENDMARKER, "", this.line, this.col, this.current));
     return this.tokens;
-  }
-
-  printTokens() {
-    for (const token of this.tokens) {
-      console.log(`${token.indexInSource}:${token.line}-${token.line},${token.indexInSource + token.lexeme.length}\t\t\t\
-            ${TokenType[token.type]}\t\t\t'${token.lexeme}'`);
-    }
   }
 
   private raiseForbiddenOperator() {

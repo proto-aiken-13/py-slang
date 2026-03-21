@@ -94,22 +94,7 @@ export class Context {
     const newContext = new Context();
     newContext.control = this.control.copy();
     newContext.stash = this.stash.copy();
-    //newContext.environments = this.copyEnvironment(this.environments);
     return newContext;
-  }
-
-  private copyEnvironment(env: Environment): Environment {
-    const newTail = env.tail ? this.copyEnvironment(env.tail) : null;
-    const newEnv: Environment = {
-      id: env.id,
-      name: env.name,
-      tail: newTail,
-      head: { ...env.head },
-      heap: new Heap(),
-      callExpression: env.callExpression,
-      thisContext: env.thisContext,
-    };
-    return newEnv;
   }
 }
 

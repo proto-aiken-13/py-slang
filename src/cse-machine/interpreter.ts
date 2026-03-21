@@ -96,13 +96,6 @@ export function evaluate(
 ): Value {
   context.source = code;
   try {
-    // TODO: is undefined variables check necessary for Python?
-    // checkProgramForUndefinedVariables(program, context)
-  } catch (error) {
-    return { type: "error", message: error instanceof Error ? error.message : String(error) };
-  }
-
-  try {
     context.runtime.isRunning = true;
     context.control = new Control(program);
     context.stash = new Stash();
@@ -536,7 +529,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
   ) {
     const functionDefNode = command as StmtNS.FunctionDef;
     const localVariables = scanForAssignments(functionDefNode.body);
-    const closure = Closure.makeFromFunctionDef(
+    const closure = Closure.make(
       functionDefNode,
       currentEnvironment(context),
       context,
@@ -555,7 +548,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
   ) {
     const lambdaNode = command as ExprNS.Lambda;
     const localVariables = scanForAssignments(lambdaNode.body);
-    const closure = Closure.makeFromLambda(
+    const closure = Closure.make(
       lambdaNode,
       currentEnvironment(context),
       context,

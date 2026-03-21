@@ -590,7 +590,7 @@ export function isFalsy(value: Value): boolean {
     case "string":
       return value.value === "";
     case "complex":
-      return value.value.real === 0 && value.value.imag == 0;
+      return value.value.real === 0 && value.value.imag === 0;
     case "none": // Represents None
       return true;
     default:

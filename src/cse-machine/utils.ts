@@ -360,21 +360,3 @@ export function scanForAssignments(node: Node | Node[]): Set<string> {
   return assignments;
 }
 
-export function operandTranslator(type: string) {
-  switch (type) {
-    case "__py_adder":
-      return "+";
-    case "__py_minuser":
-      return "-";
-    case "__py_multiplier":
-      return "*";
-    case "__py_divider":
-      return "/";
-    case "__py_modder":
-      return "%";
-    case "__py_powerer":
-      return "**";
-    default:
-      return type;
-  }
-}
