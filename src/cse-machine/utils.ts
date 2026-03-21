@@ -360,25 +360,6 @@ export function scanForAssignments(node: Node | Node[]): Set<string> {
   return assignments;
 }
 
-export function typeTranslator(type: string): string {
-  switch (type) {
-    case "bigint":
-      return "int";
-    case "number":
-      return "float";
-    case "boolean":
-      return "bool";
-    case "bool":
-      return "bool";
-    case "string":
-      return "string";
-    case "complex":
-      return "complex";
-    default:
-      return "unknown";
-  }
-}
-
 export function operandTranslator(type: string) {
   switch (type) {
     case "__py_adder":

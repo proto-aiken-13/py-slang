@@ -3,6 +3,7 @@ import { Context } from "../cse-machine/context";
 import { Value } from "../cse-machine/stash";
 import { operatorTranslator } from "../cse-machine/types";
 import { Token } from "../tokenizer";
+import { typeTranslator } from "../utils/type-names";
 
 export enum ErrorType {
   IMPORT = "Import",
@@ -90,26 +91,6 @@ export class RuntimeSourceError implements SourceError {
 
   public elaborate() {
     return this.explain();
-  }
-}
-
-// Local copy to avoid circular import from utils
-function typeTranslator(type: string): string {
-  switch (type) {
-    case "bigint":
-      return "int";
-    case "number":
-      return "float";
-    case "boolean":
-      return "bool";
-    case "bool":
-      return "bool";
-    case "string":
-      return "string";
-    case "complex":
-      return "complex";
-    default:
-      return "unknown";
   }
 }
 
