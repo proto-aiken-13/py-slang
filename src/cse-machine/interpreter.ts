@@ -7,6 +7,7 @@
 /* tslint:disable:max-classes-per-file */
 
 import { ExprNS, StmtNS } from "../ast-types";
+import { TokenType } from "../tokens";
 import * as error from "../errors/errors";
 import { BuiltinReassignmentError } from "../errors/errors";
 import { IOptions } from "../runner/pyRunner";
@@ -37,6 +38,7 @@ import {
   BinOpInstr,
   BoolOpInstr,
   BranchInstr,
+  ConditionalBoolOpInstr,
   EnvInstr,
   Instr,
   InstrType,
@@ -416,8 +418,9 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
     _isPrelude: boolean,
   ) {
     const boolOp = command as ExprNS.BoolOp;
-    control.push(instrCreator.boolOpInstr(boolOp.operator.type, boolOp));
-    control.push(boolOp.right);
+    control.push(
+      instrCreator.conditionalBoolOpInstr(boolOp.operator.type, boolOp.right, boolOp),
+    );
     control.push(boolOp.left);
   },
 
@@ -746,6 +749,36 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
         right,
       );
       stash.push(result);
+    }
+  },
+
+  [InstrType.CONDITIONAL_BOOL_OP]: function (
+    _code: string,
+    command: ControlItem,
+    _context: Context,
+    control: Control,
+    stash: Stash,
+    _isPrelude: boolean,
+  ) {
+    const instr = command as ConditionalBoolOpInstr;
+    const left = stash.peek()!;
+
+    if (instr.operator === TokenType.AND) {
+      // Short-circuit: if left is falsy, leave it on stash (don't evaluate right)
+      if (isFalsy(left)) {
+        return;
+      }
+      // Left is truthy: pop it and evaluate right
+      stash.pop();
+      control.push(instr.right);
+    } else {
+      // OR: if left is truthy, leave it on stash (don't evaluate right)
+      if (!isFalsy(left)) {
+        return;
+      }
+      // Left is falsy: pop it and evaluate right
+      stash.pop();
+      control.push(instr.right);
     }
   },
 

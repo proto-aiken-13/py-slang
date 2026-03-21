@@ -47,6 +47,7 @@ export enum InstrType {
   ENVIRONMENT = "environment",
   MARKER = "marker",
   END_OF_FUNCTION_BODY = "EndOfFunctionBody",
+  CONDITIONAL_BOOL_OP = "ConditionalBoolOp",
 }
 
 interface BaseInstr {
@@ -124,6 +125,12 @@ export interface BoolOpInstr extends BaseInstr {
   symbol: TokenType;
 }
 
+export interface ConditionalBoolOpInstr extends BaseInstr {
+  instrType: InstrType.CONDITIONAL_BOOL_OP;
+  operator: TokenType;
+  right: ExprNS.Expr;
+}
+
 export type Instr =
   | BaseInstr
   | WhileInstr
@@ -138,7 +145,8 @@ export type Instr =
   | EndOfFunctionBodyInstr
   | ResetInstr
   | PopInstr
-  | BoolOpInstr;
+  | BoolOpInstr
+  | ConditionalBoolOpInstr;
 
 export function typeTranslator(type: string): string {
   switch (type) {

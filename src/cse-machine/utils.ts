@@ -164,6 +164,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   [InstrType.UNARY_OP, setToFalse],
   [InstrType.BINARY_OP, setToFalse],
   [InstrType.BOOL_OP, setToFalse],
+  [InstrType.CONDITIONAL_BOOL_OP, setToFalse],
   [InstrType.POP, setToFalse],
   [InstrType.MARKER, setToFalse],
   [InstrType.ASSIGNMENT, setToFalse],
