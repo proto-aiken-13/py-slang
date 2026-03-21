@@ -57,11 +57,6 @@ type CmdEvaluator = (
   isPrelude: boolean,
 ) => void;
 
-let cseFinalPrint = "";
-export function addPrint(str: string) {
-  cseFinalPrint = cseFinalPrint + str + "\n";
-}
-
 /**
  * Function that returns the appropriate Promise<Result> given the output of CSE machine evaluating, depending
  * on whether the program is finished evaluating, ran into a breakpoint or ran into an error.
@@ -75,7 +70,7 @@ export function CSEResultPromise(context: Context, value: Value): Promise<Result
       resolve({ status: "suspended-cse-eval", context });
     } else if (value.type === "error") {
       const msg = value.message;
-      const representation = new Representation(cseFinalPrint + msg);
+      const representation = new Representation(context.output + msg);
       resolve({ status: "finished", context, value, representation });
     } else {
       const representation = new Representation(toPythonString(value));
@@ -83,8 +78,6 @@ export function CSEResultPromise(context: Context, value: Value): Promise<Result
     }
   });
 }
-
-let source = "";
 
 /**
  * Function to be called when a program is to be interpreted using
@@ -101,7 +94,7 @@ export function evaluate(
   context: Context,
   options: RecursivePartial<IOptions> = {},
 ): Value {
-  source = code;
+  context.source = code;
   try {
     // TODO: is undefined variables check necessary for Python?
     // checkProgramForUndefinedVariables(program, context)
@@ -250,7 +243,7 @@ export function* generateCSEMachineStateStream(
 
     // Step limit reached, stop further evaluation
     if (!isPrelude && steps === stepLimit) {
-      handleRuntimeError(context, new error.StepLimitExceededError(source, command as ExprNS.Expr));
+      handleRuntimeError(context, new error.StepLimitExceededError(context.source, command as ExprNS.Expr));
     }
 
     if (!isPrelude && envChanging(command)) {

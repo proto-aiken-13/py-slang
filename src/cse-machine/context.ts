@@ -11,6 +11,7 @@ export class Context {
   public control: Control;
   public stash: Stash;
   public output: string = "";
+  public source: string = "";
   //public environment: Environment;
   public errors: CseError[] = [];
   public moduleContexts: { [name: string]: ModuleContext };
