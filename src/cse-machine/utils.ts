@@ -78,7 +78,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   ["Pass", setToFalse],
   ["Break", setToFalse],
   ["Continue", setToFalse],
-  ["Variable", setToFalse],
+  ["Variable", setToTrue],
   [
     "Call",
     (item: ControlItem) => {
@@ -93,7 +93,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   ["None", setToFalse],
   ["Complex", setToFalse],
   [
-    "Call",
+    "Grouping",
     (item: ControlItem) => {
       const node = item as ExprNS.Grouping;
       item.isEnvDependent = isEnvDependent(node.expression);
