@@ -7,8 +7,10 @@
  */
 import { parse } from "../parser/parser-adapter";
 import { analyze } from "../resolver";
-import { StmtNS } from "../ast-types";
+import { StmtNS, ExprNS } from "../ast-types";
 import { FeatureNotSupportedError } from "../validator";
+import { ResolverErrors } from "../resolver/errors";
+import { traverseAST } from "../validator/traverse";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,12 +102,18 @@ describe("Chapter 1 — most restrictive", () => {
     expect(() => analyzeOk("xs = 1\nfor i in xs:\n    pass", 1)).toThrow(FeatureNotSupportedError);
   });
 
-  test("lambda is banned in chapter 1", () => {
-    expect(() => analyzeOk("f = lambda x: x", 1)).toThrow(FeatureNotSupportedError);
+  test("lambda is allowed in chapter 1", () => {
+    expect(() => analyzeOk("f = lambda x: x", 1)).not.toThrow();
   });
 
   test("list literal is banned in chapter 1", () => {
     expect(() => analyzeOk("x = []", 1)).toThrow(FeatureNotSupportedError);
+  });
+
+  test("subscript assignment is banned in chapter 1", () => {
+    // xs[0] = 3 uses ExprNS.Subscript — NoListsValidator should catch it.
+    // Declare xs at chapter 4 level first, then try subscript assignment.
+    expect(() => analyzeOk("xs = 1\nxs[0] = 3", 1)).toThrow(FeatureNotSupportedError);
   });
 
   test("reassignment is banned in chapter 1", () => {
@@ -113,13 +121,43 @@ describe("Chapter 1 — most restrictive", () => {
     expect(() => analyzeOk("x = 1\nx = 2", 1)).toThrow();
   });
 
+  test("annotated reassignment is banned in chapter 1 (AnnAssign then AnnAssign)", () => {
+    // Use 'abs' (a global builtin) as the annotation so the resolver doesn't
+    // throw NameNotFoundError on the annotation itself.
+    expect(() => analyzeOk("x: abs = 1\nx: abs = 2", 1)).toThrow(
+      ResolverErrors.NameReassignmentError,
+    );
+  });
+
+  test("annotated then plain reassignment is banned in chapter 1 (AnnAssign then Assign)", () => {
+    expect(() => analyzeOk("x: abs = 1\nx = 2", 1)).toThrow(ResolverErrors.NameReassignmentError);
+  });
+
+  test("plain then annotated reassignment is banned in chapter 1 (Assign then AnnAssign)", () => {
+    expect(() => analyzeOk("x = 1\nx: abs = 2", 1)).toThrow(ResolverErrors.NameReassignmentError);
+  });
+
   test("break/continue are banned in chapter 1", () => {
     expect(() => analyzeOk("def f():\n    break", 1)).toThrow(FeatureNotSupportedError);
     expect(() => analyzeOk("def f():\n    continue", 1)).toThrow(FeatureNotSupportedError);
   });
+
+  test("nonlocal is banned in chapter 1", () => {
+    expect(() => analyzeOk("def f():\n    x = 1\n    def g():\n        nonlocal x", 1)).toThrow(
+      FeatureNotSupportedError,
+    );
+  });
+
+  test("rest params are banned in chapter 1", () => {
+    expect(() => analyzeOk("def f(*args):\n    pass", 1)).toThrow(FeatureNotSupportedError);
+  });
 });
 
-describe("Chapter 2 — loops still banned, reassignment allowed", () => {
+describe("Chapter 2 — loops and reassignment still banned", () => {
+  test("reassignment is banned in chapter 2", () => {
+    expect(() => analyzeOk("x = 1\nx = 2", 2)).toThrow();
+  });
+
   test("while loop is banned in chapter 2", () => {
     expect(() => analyzeOk("while True:\n    pass", 2)).toThrow(FeatureNotSupportedError);
   });
@@ -131,6 +169,16 @@ describe("Chapter 2 — loops still banned, reassignment allowed", () => {
   test("list literal is banned in chapter 2", () => {
     expect(() => analyzeOk("x = []", 2)).toThrow(FeatureNotSupportedError);
   });
+
+  test("nonlocal is banned in chapter 2", () => {
+    expect(() => analyzeOk("def f():\n    x = 1\n    def g():\n        nonlocal x", 2)).toThrow(
+      FeatureNotSupportedError,
+    );
+  });
+
+  test("rest params are banned in chapter 2", () => {
+    expect(() => analyzeOk("def f(*args):\n    pass", 2)).toThrow(FeatureNotSupportedError);
+  });
 });
 
 describe("Chapter 3 — loops and lists allowed", () => {
@@ -138,12 +186,42 @@ describe("Chapter 3 — loops and lists allowed", () => {
     expect(() => analyzeOk("while True:\n    pass", 3)).not.toThrow();
   });
 
-  test("for loop is allowed in chapter 3", () => {
-    expect(() => analyzeOk("xs = 1\nfor i in xs:\n    pass", 3)).not.toThrow();
-  });
-
   test("list literal is allowed in chapter 3", () => {
     expect(() => analyzeOk("x = []", 3)).not.toThrow();
+  });
+
+  test("nonlocal is allowed in chapter 3", () => {
+    expect(() =>
+      analyzeOk("def f():\n    x = 1\n    def g():\n        nonlocal x", 3),
+    ).not.toThrow();
+  });
+
+  test("for with range() is allowed in chapter 3", () => {
+    expect(() => analyzeOk("for i in range(10):\n    pass", 3)).not.toThrow();
+  });
+
+  test("for with range(start, stop) is allowed in chapter 3", () => {
+    expect(() => analyzeOk("for i in range(0, 10):\n    pass", 3)).not.toThrow();
+  });
+
+  test("for with range(start, stop, step) is allowed in chapter 3", () => {
+    expect(() => analyzeOk("for i in range(0, 10, 2):\n    pass", 3)).not.toThrow();
+  });
+
+  test("for without range() is banned in chapter 3", () => {
+    expect(() => analyzeOk("xs = 1\nfor i in xs:\n    pass", 3)).toThrow(FeatureNotSupportedError);
+  });
+
+  test("for without range() is allowed in chapter 4", () => {
+    expect(() => analyzeOk("xs = 1\nfor i in xs:\n    pass", 4)).not.toThrow();
+  });
+
+  test("subscript assignment resolves in chapter 3", () => {
+    expect(() => analyzeOk("xs = [1, 2]\nxs[0] = 3", 3)).not.toThrow();
+  });
+
+  test("rest params are allowed in chapter 3", () => {
+    expect(() => analyzeOk("def f(*args):\n    pass", 3)).not.toThrow();
   });
 });
 
@@ -173,5 +251,25 @@ describe("Pipeline ordering", () => {
   test("feature error is thrown after resolver passes", () => {
     // [1, 2] — name resolution is fine, but chapter 1 bans lists
     expect(() => analyzeOk("[1, 2]", 1)).toThrow(FeatureNotSupportedError);
+  });
+});
+
+describe("traverseAST — target visitation", () => {
+  test("traverses Assign target (Variable)", () => {
+    const ast = parseSource("x = 1\n");
+    const visited: string[] = [];
+    traverseAST(ast, node => {
+      if (node instanceof ExprNS.Variable) visited.push(node.name.lexeme);
+    });
+    expect(visited).toContain("x");
+  });
+
+  test("traverses AnnAssign target (Variable)", () => {
+    const ast = parseSource("x: abs = 1\n");
+    const visited: string[] = [];
+    traverseAST(ast, node => {
+      if (node instanceof ExprNS.Variable) visited.push(node.name.lexeme);
+    });
+    expect(visited).toContain("x");
   });
 });

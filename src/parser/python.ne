@@ -1,5 +1,16 @@
 # Nearley grammar for Python subset (Source Academy)
 # Produces class-based AST nodes
+#
+# Naming convention:
+#   Spec-traceable rules:     spec name (hyphens → underscores)
+#                              (program, statement, block, expression, import_stmt, ...)
+#   Statement variants:       statement + AST node name
+#                              (statementAssign, statementReturn, statementDef, ...)
+#   Precedence cascade:       expression + level suffix
+#                              (expressionOr, expressionAnd, expressionNot, expressionCmp,
+#                               expressionAdd, expressionMul, expressionUnary, expressionPow,
+#                               expressionPost)
+#   Operator sub-rules:       level + Op (expressionAddOp, expressionMulOp, expressionCmpOp)
 
 @preprocessor esmodule
 
@@ -38,17 +49,43 @@ function stripQuotes(s) {
     }
   });
 }
+
+// ── Leaf AST constructors (token → node) ────────────────────────────────
+const astVariable   = ([t]) => { const k = toAstToken(t); return new ExprNS.Variable(k, k, k); };
+const astBigInt     = ([t]) => { const k = toAstToken(t); return new ExprNS.BigIntLiteral(k, k, t.value); };
+const astComplex    = ([t]) => { const k = toAstToken(t); return new ExprNS.Complex(k, k, t.value); };
+const astNone       = ([t]) => { const k = toAstToken(t); return new ExprNS.None(k, k); };
+const astString     = ([t]) => { const k = toAstToken(t); return new ExprNS.Literal(k, k, stripQuotes(t.value)); };
+const astTrue       = ([t]) => { const k = toAstToken(t); return new ExprNS.Literal(k, k, true); };
+const astFalse      = ([t]) => { const k = toAstToken(t); return new ExprNS.Literal(k, k, false); };
+
+// ── Operator AST constructors (children → node) ────────────────────────
+const astBinary     = ([l, op, r]) => new ExprNS.Binary(l.startToken, r.endToken, l, op, r);
+const astBinaryTok  = ([l, op, r]) => new ExprNS.Binary(l.startToken, r.endToken, l, toAstToken(op), r);
+const astBoolOp     = ([l, op, r]) => new ExprNS.BoolOp(l.startToken, r.endToken, l, toAstToken(op), r);
+const astUnary      = ([op, arg]) => new ExprNS.Unary(toAstToken(op), arg.endToken, toAstToken(op), arg);
+const astCompare    = ([l, op, r]) => new ExprNS.Compare(l.startToken, r.endToken, l, op, r);
+
+// ── Token / list helpers ────────────────────────────────────────────────
+const tok           = ([t]) => toAstToken(t);
+const flatList      = ([first, rest]) => [first, ...rest.map(d => d[1])];
+const tokList       = ([first, rest]) => [toAstToken(first), ...rest.map(d => toAstToken(d[1]))];
 %}
 
 @lexer pythonLexer
 
 # ============================================================================
-# Program
+# program ::= import-stmt ... block              [python_1_bnf.tex line 18]
+#
+# Enforces: imports come before statements.  An import after a statement
+# is a parse error.
 # ============================================================================
 
-file -> stmts
-  {% ([stmts]) => {
-       const filtered = (stmts || []).filter(Boolean);
+program -> (import_stmt %newline):* (statement | %newline):*
+  {% ([imports, stmts]) => {
+       const importNodes = imports.map(d => d[0]);
+       const stmtNodes = stmts.map(d => d[0]).filter(s => s && s.startToken !== undefined);
+       const filtered = [...importNodes, ...stmtNodes];
        const start = filtered[0]
          ? filtered[0].startToken
          : toAstToken({type:'newline',value:'',line:1,col:1,offset:0});
@@ -58,277 +95,322 @@ file -> stmts
        return new StmtNS.FileInput(start, end, filtered, []);
      } %}
 
-stmts ->
-    null                                      {% drop %}
-  | stmts stmt                                {% ([xs, x]) => x ? [...xs, x] : xs %}
-  | stmts %newline                            {% id %}
-  | stmts %ws                                 {% id %}
-
-stmt -> simple_stmt {% id %} | compound_stmt {% id %}
-
 # ============================================================================
-# Simple statements
+# import-stmt ::= from dotted-name import import-clause  [python_1_bnf.tex line 19]
 # ============================================================================
 
-simple_stmt -> small_stmt _ %newline            {% id %}
+import_stmt ->
+    "from" dotted_name "import" import_clause
+      {% ([kw, mod,, names]) => {
+           const last = names[names.length-1];
+           const endTok = last.alias || last.name;
+           return new StmtNS.FromImport(toAstToken(kw), endTok, mod, names);
+         } %}
 
-small_stmt ->
-    pass_stmt     {% id %}
-  | break_stmt    {% id %}
-  | continue_stmt {% id %}
-  | return_stmt   {% id %}
-  | assign_stmt   {% id %}
-  | import_stmt   {% id %}
-  | global_stmt   {% id %}
-  | nonlocal_stmt {% id %}
-  | assert_stmt   {% id %}
-  | expr_stmt     {% id %}
+# dotted-name ::= name ( . name )...                     [python_1_bnf.tex line 20]
+dotted_name -> %name ("." %name):*
+  {% ([first, rest]) => {
+       let tok = toAstToken(first);
+       for (const [, n] of rest) {
+         const right = toAstToken(n);
+         tok.lexeme = tok.lexeme + '.' + right.lexeme;
+       }
+       return tok;
+     } %}
 
-pass_stmt -> %kw_pass
-  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Pass(tok, tok); } %}
+# import-clause ::= import-as-names | ( import-as-names ) [python_1_bnf.tex line 21-22]
+import_clause ->
+    import_as_names  {% id %}
+  | "(" import_as_names ")"  {% ([, ns]) => ns %}
 
-break_stmt -> %kw_break
-  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Break(tok, tok); } %}
+# import-as-names ::= import-as-name (, import-as-name)... [python_1_bnf.tex line 23]
+import_as_names -> import_as_name ("," import_as_name):*
+  {% flatList %}
 
-continue_stmt -> %kw_continue
-  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Continue(tok, tok); } %}
+# import-as-name ::= name [ as name ]                     [python_1_bnf.tex line 24]
+import_as_name ->
+    %name  {% ([t]) => ({ name: toAstToken(t), alias: null }) %}
+  | %name "as" %name  {% ([t,, a]) => ({ name: toAstToken(t), alias: toAstToken(a) }) %}
 
-return_stmt ->
-    %kw_return _ test
-      {% ([kw,, expr]) => new StmtNS.Return(toAstToken(kw), expr.endToken, expr) %}
-  | %kw_return
-      {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Return(tok, tok, null); } %}
+# ============================================================================
+# statement                                      [python_1_bnf.tex lines 25-29]
+# ============================================================================
 
-assign_stmt ->
-    %identifier _ ":" _ test _ "=" _ test
-      {% ([n,,,, ann,,,, v]) => { const tok = toAstToken(n); return new StmtNS.AnnAssign(tok, v.endToken, new ExprNS.Variable(tok, tok, tok), v, ann); } %}
-  | %identifier _ ":" _ test
-      {% ([n,,,, ann]) => {
+statement ->
+    statementAssign %newline                     {% id %}
+  | statementAnnAssign %newline                  {% id %}
+  | statementSubscriptAssign %newline            {% id %}
+  | statementReturn %newline                     {% id %}
+  | statementPass %newline                       {% id %}
+  | statementBreak %newline                      {% id %}
+  | statementContinue %newline                   {% id %}
+  | statementGlobal %newline                     {% id %}
+  | statementNonlocal %newline                   {% id %}
+  | statementAssert %newline                     {% id %}
+  | statementExpr %newline                       {% id %}
+  | if_statement
+      {% id %}
+  | statementWhile
+      {% id %}
+  | statementFor
+      {% id %}
+  | statementDef
+      {% id %}
+
+statementAssign -> %name "=" expression
+  {% ([n,, v]) => { const tok = toAstToken(n); return new StmtNS.Assign(tok, v.endToken, new ExprNS.Variable(tok, tok, tok), v); } %}
+
+statementAnnAssign ->
+    %name ":" expression "=" expression
+      {% ([n,, ann,, v]) => { const tok = toAstToken(n); return new StmtNS.AnnAssign(tok, v.endToken, new ExprNS.Variable(tok, tok, tok), v, ann); } %}
+  | %name ":" expression
+      {% ([n,, ann]) => {
            const nameTok = toAstToken(n);
            const dummyVal = new ExprNS.None(ann.endToken, ann.endToken);
            return new StmtNS.AnnAssign(nameTok, ann.endToken, new ExprNS.Variable(nameTok, nameTok, nameTok), dummyVal, ann);
          } %}
-  | %identifier _ "=" _ test
-      {% ([n,,,, v]) => { const tok = toAstToken(n); return new StmtNS.Assign(tok, v.endToken, new ExprNS.Variable(tok, tok, tok), v); } %}
 
-import_stmt ->
-    %kw_from _ %identifier _ %kw_import _ import_names
-      {% ([kw,, mod,,,, names]) => new StmtNS.FromImport(toAstToken(kw), names[names.length-1], toAstToken(mod), names) %}
+statementSubscriptAssign -> expressionPost %lsqb expression %rsqb "=" expression
+  {% function(d) {
+       var obj = d[0], idx = d[2], rsqb = d[3], val = d[5];
+       var sub = new ExprNS.Subscript(obj.startToken, toAstToken(rsqb), obj, idx);
+       return new StmtNS.Assign(obj.startToken, val.endToken, sub, val);
+     } %}
 
-import_names ->
-    %identifier                               {% ([t]) => [toAstToken(t)] %}
-  | "(" _ name_list _ ")"                    {% ([,, ns]) => ns %}
+statementReturn ->
+    "return" expression
+      {% ([kw, expr]) => new StmtNS.Return(toAstToken(kw), expr.endToken, expr) %}
+  | "return"
+      {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Return(tok, tok, null); } %}
 
-name_list ->
-    %identifier                               {% ([t]) => [toAstToken(t)] %}
-  | name_list _ "," _ %identifier            {% ([ns,,,, t]) => [...ns, toAstToken(t)] %}
+statementPass -> "pass"
+  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Pass(tok, tok); } %}
 
-global_stmt -> %kw_global _ %identifier
-  {% ([kw,, n]) => new StmtNS.Global(toAstToken(kw), toAstToken(n), toAstToken(n)) %}
+statementBreak -> "break"
+  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Break(tok, tok); } %}
 
-nonlocal_stmt -> %kw_nonlocal _ %identifier
-  {% ([kw,, n]) => new StmtNS.NonLocal(toAstToken(kw), toAstToken(n), toAstToken(n)) %}
+statementContinue -> "continue"
+  {% ([t]) => { const tok = toAstToken(t); return new StmtNS.Continue(tok, tok); } %}
 
-assert_stmt -> %kw_assert _ test
-  {% ([kw,, e]) => new StmtNS.Assert(toAstToken(kw), e.endToken, e) %}
+statementGlobal -> "global" %name
+  {% ([kw, n]) => new StmtNS.Global(toAstToken(kw), toAstToken(n), toAstToken(n)) %}
 
-expr_stmt -> test
+statementNonlocal -> "nonlocal" %name
+  {% ([kw, n]) => new StmtNS.NonLocal(toAstToken(kw), toAstToken(n), toAstToken(n)) %}
+
+statementAssert -> "assert" expression
+  {% ([kw, e]) => new StmtNS.Assert(toAstToken(kw), e.endToken, e) %}
+
+statementExpr -> expression
   {% ([e]) => new StmtNS.SimpleExpr(e.startToken, e.endToken, e) %}
 
+statementWhile -> "while" expression ":" block
+  {% ([kw, test,, body]) =>
+       new StmtNS.While(toAstToken(kw), body[body.length-1].endToken, test, body) %}
+
+statementFor -> "for" %name "in" expression ":" block
+  {% ([kw, target,, iter,, body]) =>
+       new StmtNS.For(toAstToken(kw), body[body.length-1].endToken, toAstToken(target), iter, body) %}
+
+statementDef -> "def" %name params ":" block
+  {% ([kw, name, params,, body]) =>
+       new StmtNS.FunctionDef(toAstToken(kw), body[body.length-1].endToken,
+         toAstToken(name), params, body, []) %}
+
 # ============================================================================
-# Compound statements
+# if-statement with EBNF                         [python_1_bnf.tex lines 31-33]
 # ============================================================================
 
-compound_stmt -> if_stmt {% id %} | while_stmt {% id %} | for_stmt {% id %} | funcdef {% id %}
+if_statement -> "if" expression ":" block ("elif" expression ":" block):* ("else" ":" block):?
+  {% ([kw, test,, body, elifs, elseBlock]) => {
+       let else_ = elseBlock ? elseBlock[0][2] : null;
+       for (let i = elifs.length - 1; i >= 0; i--) {
+         const [ekw, etest, ecolon, ebody] = elifs[i];
+         const endTok = else_ && else_.length > 0 ? else_[else_.length-1].endToken : ebody[ebody.length-1].endToken;
+         else_ = [new StmtNS.If(toAstToken(ekw), endTok, etest, ebody, else_)];
+       }
+       const endTok = (else_ && else_.length > 0) ? else_[else_.length-1].endToken : body[body.length-1].endToken;
+       return new StmtNS.If(toAstToken(kw), endTok, test, body, else_);
+     } %}
 
-if_stmt ->
-    %kw_if _ test _ ":" _ suite elif_chain
-      {% ([kw,, test,,,, body, else_]) =>
-           new StmtNS.If(toAstToken(kw),
-             (else_ && else_.length > 0) ? else_[else_.length-1].endToken : body[body.length-1].endToken,
-             test, body, else_) %}
+# ============================================================================
+# names ::= ...                                  [python_1_bnf.tex line 30]
+# ============================================================================
 
-elif_chain ->
-    _ %kw_elif _ test _ ":" _ suite elif_chain
-      {% ([, kw,, test,,,, body, else_]) => [new StmtNS.If(toAstToken(kw),
-           (else_ && else_.length > 0) ? else_[else_.length-1].endToken : body[body.length-1].endToken,
-           test, body, else_)] %}
-  | _ %kw_else _ ":" _ suite                   {% ([,,,,, body]) => body %}
-  | null                                      {% nil %}
+names -> %name ("," %name):*
+  {% tokList %}
 
-while_stmt ->
-    %kw_while _ test _ ":" _ suite
-      {% ([kw,, test,,,, body]) =>
-           new StmtNS.While(toAstToken(kw), body[body.length-1].endToken, test, body) %}
+# ============================================================================
+# block ::= statement...                         [python_1_bnf.tex line 34]
+# ============================================================================
 
-for_stmt ->
-    %kw_for _ %identifier _ %kw_in _ test _ ":" _ suite
-      {% ([kw,, target,,,, iter,,,, body]) =>
-           new StmtNS.For(toAstToken(kw), body[body.length-1].endToken, toAstToken(target), iter, body) %}
+block ->
+    blockInline %newline                         {% list %}
+  | %newline %indent (statement | %newline):+ %dedent
+      {% ([,, stmts]) => stmts.map(d => d[0]).filter(s => s && s.startToken !== undefined) %}
 
-funcdef ->
-    %kw_def _ %identifier _ params _ ":" _ suite
-      {% ([kw,, name,, params,,,, body]) =>
-           new StmtNS.FunctionDef(toAstToken(kw), body[body.length-1].endToken,
-             toAstToken(name), params, body, []) %}
+blockInline ->
+    statementAssign       {% id %}
+  | statementAnnAssign    {% id %}
+  | statementSubscriptAssign {% id %}
+  | statementReturn       {% id %}
+  | statementPass         {% id %}
+  | statementBreak        {% id %}
+  | statementContinue     {% id %}
+  | statementGlobal       {% id %}
+  | statementNonlocal     {% id %}
+  | statementAssert       {% id %}
+  | statementExpr         {% id %}
+
+# ============================================================================
+# rest-names ::= ε | *name | name (, name)... [, *name]  [python_3_bnf.tex line 37-38]
+# ============================================================================
+
+rest_names ->
+    %name
+      {% ([t]) => { const tok = toAstToken(t); tok.isStarred = false; return [tok]; } %}
+  | "*" %name
+      {% ([, t]) => { const tok = toAstToken(t); tok.isStarred = true; return [tok]; } %}
+  | rest_names "," %name
+      {% ([params,, t]) => { const tok = toAstToken(t); tok.isStarred = false; return [...params, tok]; } %}
+  | rest_names "," "*" %name
+      {% ([params,,, t]) => { const tok = toAstToken(t); tok.isStarred = true; return [...params, tok]; } %}
 
 params ->
-    "(" _nl ")"                               {% drop %}
-  | "(" _nl param_list _nl ")"               {% ([,, ps]) => ps %}
-
-param_list ->
-    %identifier                               {% ([t]) => [toAstToken(t)] %}
-  | param_list _nl "," _nl %identifier       {% ([ps,,,, t]) => [...ps, toAstToken(t)] %}
-
-suite ->
-    simple_stmt                               {% list %}
-  | %newline %indent suite_stmts %dedent      {% ([,, stmts]) => stmts %}
-
-suite_stmts ->
-    _ stmt                          {% ([, s]) => [s] %}
-  | suite_stmts _ stmt              {% ([xs,, s]) => [...xs, s] %}
-  | suite_stmts _ %newline            {% id %}
+    "(" ")"                                   {% drop %}
+  | "(" rest_names ")"                        {% ([, ps]) => ps %}
 
 # ============================================================================
-# Expressions
+# expression ::= ...                             [python_1_bnf.tex lines 35-46]
 # ============================================================================
 
-test ->
-    or_test _ %kw_if _ or_test _ %kw_else _ test
-      {% ([cons,,,, test,,,, alt]) => new ExprNS.Ternary(cons.startToken, alt.endToken, test, cons, alt) %}
-  | or_test                                   {% id %}
-  | lambdef                                   {% id %}
+expression -> expressionOr "if" expressionOr "else" expression {% ([cons, , test,, alt]) => new ExprNS.Ternary(cons.startToken, alt.endToken, test, cons, alt) %}
+  | expressionOr                                   {% id %}
+  | lambda_expr                                {% id %}
 
-lambdef ->
-    %kw_lambda _ param_list _ ":" _ test
-      {% ([kw,, params,,,, body]) => new ExprNS.Lambda(toAstToken(kw), body.endToken, params, body) %}
-  | %kw_lambda _ param_list _ "::" _ suite
-      {% ([kw,, params,,,, body]) =>
-           new ExprNS.MultiLambda(toAstToken(kw), body[body.length-1].endToken, params, body, []) %}
-  | %kw_lambda _ ":" _ test
-      {% ([kw,,,, body]) => new ExprNS.Lambda(toAstToken(kw), body.endToken, [], body) %}
-  | %kw_lambda _ "::" _ suite
-      {% ([kw,,,, body]) =>
-           new ExprNS.MultiLambda(toAstToken(kw), body[body.length-1].endToken, [], body, []) %}
+# ============================================================================
+# Precedence cascade
+#   expressionOr > expressionAnd > expressionNot > expressionCmp >
+#   expressionAdd > expressionMul > expressionUnary > expressionPow >
+#   expressionPost > atom
+# ============================================================================
 
-or_test ->
-    or_test _ %kw_or _ and_test
-      {% ([left,, op,, right]) => new ExprNS.BoolOp(left.startToken, right.endToken, left, toAstToken(op), right) %}
-  | and_test                                  {% id %}
+expressionOr ->
+    expressionOr "or" expressionAnd              {% astBoolOp %}
+  | expressionAnd                                  {% id %}
 
-and_test ->
-    and_test _ %kw_and _ not_test
-      {% ([left,, op,, right]) => new ExprNS.BoolOp(left.startToken, right.endToken, left, toAstToken(op), right) %}
-  | not_test                                  {% id %}
+expressionAnd ->
+    expressionAnd "and" expressionNot            {% astBoolOp %}
+  | expressionNot                                  {% id %}
 
-not_test ->
-    %kw_not _ not_test
-      {% ([op,, arg]) => new ExprNS.Unary(toAstToken(op), arg.endToken, toAstToken(op), arg) %}
-  | comparison                                {% id %}
+expressionNot ->
+    "not" expressionNot                          {% astUnary %}
+  | expressionCmp                                  {% id %}
 
-comparison ->
-    comparison _ comp_op _ arith
-      {% ([left,, op,, right]) => new ExprNS.Compare(left.startToken, right.endToken, left, op, right) %}
-  | arith                                     {% id %}
+expressionCmp ->
+    expressionCmp expressionCmpOp expressionAdd  {% astCompare %}
+  | expressionAdd                                  {% id %}
 
-comp_op ->
-    %less             {% ([t]) => toAstToken(t) %}
-  | %greater          {% ([t]) => toAstToken(t) %}
-  | %doubleequal      {% ([t]) => toAstToken(t) %}
-  | %greaterequal     {% ([t]) => toAstToken(t) %}
-  | %lessequal        {% ([t]) => toAstToken(t) %}
-  | %notequal         {% ([t]) => toAstToken(t) %}
-  | %kw_in            {% ([t]) => toAstToken(t) %}
-  | %kw_not _ %kw_in  {% ([t,,]) => { const tok = toAstToken(t); tok.lexeme = 'not in'; return tok; } %}
-  | %kw_is            {% ([t]) => toAstToken(t) %}
-  | %kw_is _ %kw_not  {% ([t,,]) => { const tok = toAstToken(t); tok.lexeme = 'is not'; return tok; } %}
+expressionCmpOp ->
+    %less             {% tok %}
+  | %greater          {% tok %}
+  | %doubleequal      {% tok %}
+  | %greaterequal     {% tok %}
+  | %lessequal        {% tok %}
+  | %notequal         {% tok %}
+  | "in"              {% tok %}
+  | "not" "in"        {% ([t]) => { const tok = toAstToken(t); tok.lexeme = 'not in'; return tok; } %}
+  | "is"              {% tok %}
+  | "is" "not"        {% ([t]) => { const tok = toAstToken(t); tok.lexeme = 'is not'; return tok; } %}
 
-arith ->
-    arith _ arith_op _ term
-      {% ([left,, op,, right]) => new ExprNS.Binary(left.startToken, right.endToken, left, op, right) %}
-  | term                                      {% id %}
+expressionAdd ->
+    expressionAdd expressionAddOp expressionMul  {% astBinary %}
+  | expressionMul                                  {% id %}
 
-arith_op -> %plus {% ([t]) => toAstToken(t) %} | %minus {% ([t]) => toAstToken(t) %}
+expressionAddOp -> %plus {% tok %} | %minus {% tok %}
 
-term ->
-    term _ term_op _ factor
-      {% ([left,, op,, right]) => new ExprNS.Binary(left.startToken, right.endToken, left, op, right) %}
-  | factor                                    {% id %}
+expressionMul ->
+    expressionMul expressionMulOp expressionUnary {% astBinary %}
+  | expressionUnary                                {% id %}
 
-term_op ->
-    %star        {% ([t]) => toAstToken(t) %}
-  | %slash       {% ([t]) => toAstToken(t) %}
-  | %percent     {% ([t]) => toAstToken(t) %}
-  | %doubleslash {% ([t]) => toAstToken(t) %}
+expressionMulOp ->
+    %star        {% tok %}
+  | %slash       {% tok %}
+  | %percent     {% tok %}
+  | %doubleslash {% tok %}
 
-factor ->
-    %plus _ factor
-      {% ([op,, arg]) => new ExprNS.Unary(toAstToken(op), arg.endToken, toAstToken(op), arg) %}
-  | %minus _ factor
-      {% ([op,, arg]) => new ExprNS.Unary(toAstToken(op), arg.endToken, toAstToken(op), arg) %}
-  | power                                     {% id %}
+expressionUnary ->
+    %plus expressionUnary                        {% astUnary %}
+  | %minus expressionUnary                       {% astUnary %}
+  | expressionPow                                  {% id %}
 
-power ->
-    atom_expr _ %doublestar _ factor
-      {% ([left,, op,, right]) => new ExprNS.Binary(left.startToken, right.endToken, left, toAstToken(op), right) %}
-  | atom_expr                                 {% id %}
+expressionPow ->
+    expressionPost %doublestar expressionUnary   {% astBinaryTok %}
+  | expressionPost                                 {% id %}
 
-atom_expr ->
-    atom_expr %lsqb _ test _ %rsqb
-      {% ([obj, ,, idx,, rsqb]) => new ExprNS.Subscript(obj.startToken, toAstToken(rsqb), obj, idx) %}
-  | atom_expr "(" _ args _ ")"
-      {% ([callee,,, args,, rparen]) => new ExprNS.Call(callee.startToken, toAstToken(rparen), callee, args) %}
-  | atom_expr "(" _ ")"
-      {% ([callee,,, rparen]) => new ExprNS.Call(callee.startToken, toAstToken(rparen), callee, []) %}
-  | atom                                      {% id %}
+expressionPost ->
+    expressionPost %lsqb expression %rsqb
+      {% ([obj, , idx, rsqb]) => new ExprNS.Subscript(obj.startToken, toAstToken(rsqb), obj, idx) %}
+  | expressionPost "(" expressions ")"
+      {% ([callee,, args, rparen]) => new ExprNS.Call(callee.startToken, toAstToken(rparen), callee, args) %}
+  | expressionPost "(" ")"
+      {% ([callee,, rparen]) => new ExprNS.Call(callee.startToken, toAstToken(rparen), callee, []) %}
+  | atom                                       {% id %}
 
-args ->
-    test                                      {% list %}
-  | args _ "," _ test                         {% ([as,,,, a]) => [...as, a] %}
-  | test _ ","                                {% list %}
+# ============================================================================
+# atom (literals, variables, grouping, lists)
+# ============================================================================
 
 atom ->
-    "(" _ test _ ")"
-      {% ([,, e]) => new ExprNS.Grouping(e.startToken, e.endToken, e) %}
-  | %lsqb _ %rsqb
-      {% ([l,, r]) => new ExprNS.List(toAstToken(l), toAstToken(r), []) %}
-  | %lsqb _ args _ %rsqb
-      {% ([l,, elems,, r]) => new ExprNS.List(toAstToken(l), toAstToken(r), elems) %}
-  | %identifier
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Variable(tok, tok, tok); } %}
-  | %float
+    "(" expression ")"
+      {% ([, e]) => new ExprNS.Grouping(e.startToken, e.endToken, e) %}
+  | %lsqb %rsqb
+      {% ([l, r]) => new ExprNS.List(toAstToken(l), toAstToken(r), []) %}
+  | %lsqb expressions %rsqb
+      {% ([l, elems, r]) => new ExprNS.List(toAstToken(l), toAstToken(r), elems) %}
+  | %name                                        {% astVariable %}
+  | %number_float
       {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, parseFloat(t.value)); } %}
-  | %bigint
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.BigIntLiteral(tok, tok, t.value); } %}
-  | %hex
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.BigIntLiteral(tok, tok, t.value); } %}
-  | %octal
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.BigIntLiteral(tok, tok, t.value); } %}
-  | %binary
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.BigIntLiteral(tok, tok, t.value); } %}
-  | %complex
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Complex(tok, tok, t.value); } %}
-  | string                                    {% id %}
-  | %kw_None
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.None(tok, tok); } %}
-  | %kw_True
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, true); } %}
-  | %kw_False
-      {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, false); } %}
+  | %number_int                                  {% astBigInt %}
+  | %number_hex                                  {% astBigInt %}
+  | %number_oct                                  {% astBigInt %}
+  | %number_bin                                  {% astBigInt %}
+  | %number_complex                              {% astComplex %}
+  | stringLit                                    {% id %}
+  | "None"                                       {% astNone %}
+  | "True"                                       {% astTrue %}
+  | "False"                                      {% astFalse %}
 
-string ->
-    %stringTripleDouble  {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, stripQuotes(t.value)); } %}
-  | %stringTripleSingle  {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, stripQuotes(t.value)); } %}
-  | %stringDouble        {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, stripQuotes(t.value)); } %}
-  | %stringSingle        {% ([t]) => { const tok = toAstToken(t); return new ExprNS.Literal(tok, tok, stripQuotes(t.value)); } %}
+# ============================================================================
+# lambda_expr                                    [python_1_bnf.tex line 44]
+# ============================================================================
 
-# Whitespace
-_ -> null | %ws
-__ -> %ws
+lambda_expr ->
+    "lambda" names ":" expression
+      {% ([kw, params,, body]) => new ExprNS.Lambda(toAstToken(kw), body.endToken, params, body) %}
+  | "lambda" names %doublecolon block
+      {% ([kw, params,, body]) =>
+           new ExprNS.MultiLambda(toAstToken(kw), body[body.length-1].endToken, params, body, []) %}
+  | "lambda" ":" expression
+      {% ([kw,, body]) => new ExprNS.Lambda(toAstToken(kw), body.endToken, [], body) %}
+  | "lambda" %doublecolon block
+      {% ([kw,, body]) =>
+           new ExprNS.MultiLambda(toAstToken(kw), body[body.length-1].endToken, [], body, []) %}
 
-# Whitespace including newlines, indents, dedents (for inside parentheses)
-_nl -> null          {% id %}
-  | _nl %ws          {% id %}
-  | _nl %newline     {% id %}
-  | _nl %indent      {% id %}
-  | _nl %dedent      {% id %}
+# ============================================================================
+# expressions ::= ...                            [python_1_bnf.tex line 51]
+# ============================================================================
+
+expressions -> expression ("," expression):* (","):?
+  {% flatList %}
+
+# ============================================================================
+# stringLit — string literals
+# ============================================================================
+
+stringLit ->
+    %string_triple_double  {% astString %}
+  | %string_triple_single  {% astString %}
+  | %string_double         {% astString %}
+  | %string_single         {% astString %}
+

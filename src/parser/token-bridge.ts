@@ -2,17 +2,17 @@ import { Token } from "../tokenizer/tokenizer";
 import { TokenType } from "../tokens";
 
 const MOO_TO_TOKEN_TYPE: Record<string, TokenType> = {
-  identifier: TokenType.NAME,
-  float: TokenType.NUMBER,
-  hex: TokenType.NUMBER,
-  octal: TokenType.NUMBER,
-  binary: TokenType.NUMBER,
-  bigint: TokenType.BIGINT,
-  complex: TokenType.COMPLEX,
-  stringTripleDouble: TokenType.STRING,
-  stringTripleSingle: TokenType.STRING,
-  stringDouble: TokenType.STRING,
-  stringSingle: TokenType.STRING,
+  name: TokenType.NAME,
+  number_float: TokenType.NUMBER,
+  number_hex: TokenType.BIGINT,
+  number_oct: TokenType.BIGINT,
+  number_bin: TokenType.BIGINT,
+  number_int: TokenType.BIGINT,
+  number_complex: TokenType.COMPLEX,
+  string_triple_double: TokenType.STRING,
+  string_triple_single: TokenType.STRING,
+  string_double: TokenType.STRING,
+  string_single: TokenType.STRING,
   newline: TokenType.NEWLINE,
   indent: TokenType.INDENT,
   dedent: TokenType.DEDENT,
@@ -74,12 +74,10 @@ export function toAstToken(mooToken: {
     mooToken.type !== undefined
       ? (MOO_TO_TOKEN_TYPE[mooToken.type] ?? TokenType.NAME)
       : TokenType.NAME;
-  // Moo uses 1-based line, 1-based col, 0-based offset
-  return new Token(
-    type,
-    mooToken.value ?? "",
-    mooToken.line ?? 0,
-    mooToken.col ?? 0,
-    mooToken.offset ?? 0,
-  );
+  // Moo uses 1-based line, 1-based col, 0-based offset.
+  // Our Token.col represents the column *after* the token, so adjust Moo's start column accordingly.
+  const value = mooToken.value ?? "";
+  const startCol = mooToken.col ?? 1;
+  const endCol = startCol + value.length;
+  return new Token(type, value, mooToken.line ?? 0, endCol, mooToken.offset ?? 0);
 }

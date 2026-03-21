@@ -2,11 +2,13 @@ import { FeatureValidator } from "./types";
 import { NoListsValidator } from "./features/no-lists";
 import { NoLoopsValidator } from "./features/no-loops";
 import { createNoReassignmentValidator } from "./features/no-reassignment";
-import { NoLambdaValidator } from "./features/no-lambda";
 import { NoBreakContinueValidator } from "./features/no-break-continue";
+import { NoNonlocalValidator } from "./features/no-nonlocal";
+import { ForRangeOnlyValidator } from "./features/for-range-only";
+import { NoRestParamsValidator } from "./features/no-rest-params";
 
 /**
- * Source Chapter 1: no lists, no loops, no reassignment, no lambda, no break/continue.
+ * Source Chapter 1: no lists, no loops, no reassignment, no break/continue, no nonlocal, no rest params.
  * Factory function returns a fresh set of validators (stateful ones reset each time).
  */
 export function makeChapter1Validators(): FeatureValidator[] {
@@ -14,23 +16,33 @@ export function makeChapter1Validators(): FeatureValidator[] {
     NoListsValidator,
     NoLoopsValidator,
     createNoReassignmentValidator(),
-    NoLambdaValidator,
     NoBreakContinueValidator,
+    NoNonlocalValidator,
+    NoRestParamsValidator,
   ];
 }
 
 /**
- * Source Chapter 2: no lists, no loops. Reassignment is allowed.
+ * Source Chapter 2: no lists, no loops, no reassignment, no break/continue, no nonlocal, no rest params.
+ * Linked-list library available (None as linked list expression).
  */
 export function makeChapter2Validators(): FeatureValidator[] {
-  return [NoListsValidator, NoLoopsValidator, NoBreakContinueValidator];
+  return [
+    NoListsValidator,
+    NoLoopsValidator,
+    createNoReassignmentValidator(),
+    NoBreakContinueValidator,
+    NoNonlocalValidator,
+    NoRestParamsValidator,
+  ];
 }
 
 /**
  * Source Chapter 3: lists, loops, and reassignment are all allowed.
+ * for loops are restricted to range() only.
  */
 export function makeChapter3Validators(): FeatureValidator[] {
-  return [];
+  return [ForRangeOnlyValidator];
 }
 
 /**

@@ -28,8 +28,10 @@ export function traverseAST(node: ASTNode, fn: (node: ASTNode) => void): void {
     traverseAST(node.iter, fn);
     node.body.forEach(s => traverseAST(s, fn));
   } else if (node instanceof StmtNS.Assign) {
+    traverseAST(node.target as ASTNode, fn);
     traverseAST(node.value, fn);
   } else if (node instanceof StmtNS.AnnAssign) {
+    traverseAST(node.target, fn);
     traverseAST(node.value, fn);
     traverseAST(node.ann, fn);
   } else if (node instanceof StmtNS.Return) {
@@ -67,9 +69,7 @@ export function traverseAST(node: ASTNode, fn: (node: ASTNode) => void): void {
   } else if (node instanceof ExprNS.Subscript) {
     traverseAST(node.value, fn);
     traverseAST(node.index, fn);
-  } else if (node instanceof ExprNS.Starred) {
-    traverseAST(node.value, fn);
   }
   // Leaf nodes: Literal, Variable, BigIntLiteral, Complex, None, Pass, Break, Continue,
-  // FromImport, Global, NonLocal, Indent, Dedent — no children to traverse.
+  // FromImport, Global, NonLocal — no children to traverse.
 }
