@@ -43,24 +43,13 @@ export class Closure {
     this.localVariables = localVariables;
   }
 
-  static makeFromFunctionDef(
-    node: StmtNS.FunctionDef,
+  static make(
+    node: StmtNS.FunctionDef | ExprNS.Lambda,
     environment: Environment,
     context: Context,
     localVariables: Set<string>,
   ): Closure {
-    const closure = new Closure(node, environment, context, false, localVariables);
-    return closure;
-  }
-
-  static makeFromLambda(
-    node: ExprNS.Lambda,
-    environment: Environment,
-    context: Context,
-    localVariables: Set<string>,
-  ): Closure {
-    const closure = new Closure(node, environment, context, false, localVariables);
-    return closure;
+    return new Closure(node, environment, context, false, localVariables);
   }
 }
 

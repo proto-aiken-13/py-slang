@@ -21,7 +21,11 @@ export type Value =
   | ErrorValue
   | NoneValue
   | BigIntValue
-  | ClosureValue;
+  | ClosureValue
+  | IntValue
+  | FloatValue
+  | NoneTypeValue
+  | UndefinedValue;
 
 export interface ClosureValue {
   type: "closure";
@@ -82,6 +86,24 @@ export interface BuiltinValue {
   type: "builtin";
   name: string;
   func: (args: Value[], code: string, command: ControlItem, context: Context) => Value;
+}
+
+export interface IntValue {
+  type: "int";
+  value: number;
+}
+
+export interface FloatValue {
+  type: "float";
+  value: number;
+}
+
+export interface NoneTypeValue {
+  type: "NoneType";
+}
+
+export interface UndefinedValue {
+  type: "undefined";
 }
 
 export class Stash extends Stack<Value> {

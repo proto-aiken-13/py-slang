@@ -78,7 +78,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   ["Pass", setToFalse],
   ["Break", setToFalse],
   ["Continue", setToFalse],
-  ["Variable", setToFalse],
+  ["Variable", setToTrue],
   [
     "Call",
     (item: ControlItem) => {
@@ -93,7 +93,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   ["None", setToFalse],
   ["Complex", setToFalse],
   [
-    "Call",
+    "Grouping",
     (item: ControlItem) => {
       const node = item as ExprNS.Grouping;
       item.isEnvDependent = isEnvDependent(node.expression);
@@ -164,6 +164,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
   [InstrType.UNARY_OP, setToFalse],
   [InstrType.BINARY_OP, setToFalse],
   [InstrType.BOOL_OP, setToFalse],
+  [InstrType.CONDITIONAL_BOOL_OP, setToFalse],
   [InstrType.POP, setToFalse],
   [InstrType.MARKER, setToFalse],
   [InstrType.ASSIGNMENT, setToFalse],
@@ -178,7 +179,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
     },
   ],
   [
-    "InstrType.FOR",
+    InstrType.FOR,
     (item: ControlItem) => {
       const instr = item as ForInstr;
       item.isEnvDependent =
@@ -190,7 +191,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
     },
   ],
   [
-    "InstrType.WHILE",
+    InstrType.WHILE,
     (item: ControlItem) => {
       const instr = item as WhileInstr;
       item.isEnvDependent = isEnvDependent(instr.body) || isEnvDependent(instr.test);
@@ -218,7 +219,7 @@ export function isEnvDependent(item: ControlItem | null | undefined): boolean {
   }
   let setter: Transformer | undefined;
   if (isNode(item)) {
-    const key = "type" in item && typeof item.type === "string" ? item.type : item.constructor.name;
+    const key = "type" in item && typeof item.type === "string" ? item.type : (item as Node).kind;
     setter = propertySetter.get(key);
   } else if (isInstr(item)) {
     setter = propertySetter.get(item.instrType);
@@ -324,7 +325,7 @@ export function scanForAssignments(node: Node | Node[]): Set<string> {
       return;
     }
 
-    const nodeType = curNode.constructor.name;
+    const nodeType = curNode.kind;
 
     if (nodeType === "Assign") {
       const assignNode = curNode as StmtNS.Assign;
@@ -357,42 +358,4 @@ export function scanForAssignments(node: Node | Node[]): Set<string> {
   }
 
   return assignments;
-}
-
-export function typeTranslator(type: string): string {
-  switch (type) {
-    case "bigint":
-      return "int";
-    case "number":
-      return "float";
-    case "boolean":
-      return "bool";
-    case "bool":
-      return "bool";
-    case "string":
-      return "string";
-    case "complex":
-      return "complex";
-    default:
-      return "unknown";
-  }
-}
-
-export function operandTranslator(type: string) {
-  switch (type) {
-    case "__py_adder":
-      return "+";
-    case "__py_minuser":
-      return "-";
-    case "__py_multiplier":
-      return "*";
-    case "__py_divider":
-      return "/";
-    case "__py_modder":
-      return "%";
-    case "__py_powerer":
-      return "**";
-    default:
-      return type;
-  }
 }

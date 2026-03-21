@@ -80,7 +80,7 @@ Sometimes, it's not necessary to give a name to a function: You may
 want to create a function only to pass it to some other function as argument.
 For that, Python §
 supports function definition expressions. For example
-<PRE><CODE>(lambda x: x * x)(3) // returns 9</CODE>
+<PRE><CODE>(lambda x: x * x)(3)  # returns 9</CODE>
 </PRE>
 creates a square function just like the function declaration above,
 but does not give it a name.
@@ -116,9 +116,9 @@ Boolean operators in Python § have a special meaning. Usually, an operator comb
 evaluates all its arguments and then applies the operation to which the operator refers.
 For example, `(2 * 3) + (4 * 5)` evaluates to `2 * 3` and `4 * 5` first, before the addition
 is carried out. However, the operator <B>and</B> works differently. An expression
-`e1 and e2` should be seen as an abbreviation for `e2 if e1 else False`. The expression
-`e2` only gets evaluated if `e1` evaluates to `True`. The behaviour of <B>or</B> operator is similar:
-`e1 or e2` should be seen as an abbreviation for `True if e1 else e2`. More on these
+`e1 and e2` returns `e1` if `e1` is falsy, else returns `e2`. The expression
+`e2` only gets evaluated if `e1` is truthy. The behaviour of <B>or</B> operator is similar:
+`e1 or e2` returns `e1` if `e1` is truthy, else returns `e2`. More on these
 two boolean operators in textbook
 <a href="https://sourceacademy.org/sicpjs/1.1.6">section 1.1.6 Conditional
 Expressions and Predicates</a>.

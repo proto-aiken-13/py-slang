@@ -3,6 +3,7 @@ import { Context } from "../cse-machine/context";
 import { Value } from "../cse-machine/stash";
 import { operatorTranslator } from "../cse-machine/types";
 import { Token } from "../tokenizer";
+import { typeTranslator } from "../utils/type-names";
 
 export enum ErrorType {
   IMPORT = "Import",
@@ -90,26 +91,6 @@ export class RuntimeSourceError implements SourceError {
 
   public elaborate() {
     return this.explain();
-  }
-}
-
-// Local copy to avoid circular import from utils
-function typeTranslator(type: string): string {
-  switch (type) {
-    case "bigint":
-      return "int";
-    case "number":
-      return "float";
-    case "boolean":
-      return "bool";
-    case "bool":
-      return "bool";
-    case "string":
-      return "string";
-    case "complex":
-      return "complex";
-    default:
-      return "unknown";
   }
 }
 
@@ -264,9 +245,9 @@ export class MissingRequiredPositionalError extends RuntimeSourceError {
       this.missingParamCnt = params;
       this.missingParamName = "";
       const givenParamCnt = args.length;
-      if (this.missingParamCnt === 1 || this.missingParamCnt === 0) {
-      }
-      const msg = `TypeError: ${this.functionName}() takes ${adverb} ${this.missingParamCnt} argument (${givenParamCnt} given)
+      const noun =
+        this.missingParamCnt === 1 || this.missingParamCnt === 0 ? "argument" : "arguments";
+      const msg = `TypeError: ${this.functionName}() takes ${adverb} ${this.missingParamCnt} ${noun} (${givenParamCnt} given)
 Check the function definition of '${this.functionName}' and make sure to provide all required positional arguments in the correct order.`;
       this.message += msg;
     } else {
@@ -413,7 +394,7 @@ export class StepLimitExceededError extends RuntimeSourceError {
     const name = "StepLimitExceededError";
     const hint = "The evaluation has exceeded the maximum step limit.";
 
-    const offset = fullLine.indexOf(fullLine);
+    const offset = 0;
     const adjustedOffset = offset >= 0 ? offset : 0;
 
     const msg = [
@@ -600,10 +581,3 @@ export class BuiltinReassignmentError extends RuntimeSourceError {
     Current position is one after real position of end of token: 1
 */
 export const MAGIC_OFFSET = 1;
-
-export const SPECIAL_CHARS = new RegExp("[\\\\$'\"]", "g");
-
-function escape(unsafe: string): string {
-  // @TODO escape newlines
-  return unsafe.replace(SPECIAL_CHARS, "\\$&");
-}

@@ -5,6 +5,7 @@ import { Environment } from "./environment";
 export type Node = { isEnvDependent?: boolean } & (StmtNS.Stmt | ExprNS.Expr | StatementSequence);
 
 export interface StatementSequence {
+  readonly kind: "StatementSequence";
   type: "StatementSequence";
   body: StmtNS.Stmt[];
   loc?: {
@@ -47,6 +48,7 @@ export enum InstrType {
   ENVIRONMENT = "environment",
   MARKER = "marker",
   END_OF_FUNCTION_BODY = "EndOfFunctionBody",
+  CONDITIONAL_BOOL_OP = "ConditionalBoolOp",
 }
 
 interface BaseInstr {
@@ -124,6 +126,12 @@ export interface BoolOpInstr extends BaseInstr {
   symbol: TokenType;
 }
 
+export interface ConditionalBoolOpInstr extends BaseInstr {
+  instrType: InstrType.CONDITIONAL_BOOL_OP;
+  operator: TokenType;
+  right: ExprNS.Expr;
+}
+
 export type Instr =
   | BaseInstr
   | WhileInstr
@@ -138,28 +146,10 @@ export type Instr =
   | EndOfFunctionBodyInstr
   | ResetInstr
   | PopInstr
-  | BoolOpInstr;
+  | BoolOpInstr
+  | ConditionalBoolOpInstr;
 
-export function typeTranslator(type: string): string {
-  switch (type) {
-    case "bigint":
-      return "int";
-    case "number":
-      return "float";
-    case "boolean":
-      return "bool";
-    case "bool":
-      return "bool";
-    case "string":
-      return "str";
-    case "complex":
-      return "complex";
-    case "undefined":
-      return "NoneType";
-    default:
-      return "unknown";
-  }
-}
+export { typeTranslator } from "../utils/type-names";
 
 export function operatorTranslator(operator: TokenType | string) {
   switch (operator) {

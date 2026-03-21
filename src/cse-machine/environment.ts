@@ -2,6 +2,7 @@ import { ExprNS, StmtNS } from "../ast-types";
 import { Closure } from "./closure";
 import { Context } from "./context";
 import { Heap } from "./heap";
+import { Node } from "./types";
 import { Value } from "./stash";
 
 export interface Frame {
@@ -31,7 +32,7 @@ export const createEnvironment = (
 ): Environment => {
   const environment: Environment = {
     name:
-      closure.node.constructor.name === "FunctionDef"
+      (closure.node as Node).kind === "FunctionDef"
         ? (closure.node as StmtNS.FunctionDef).name.lexeme
         : "lambda",
     tail: closure.environment,
@@ -71,19 +72,6 @@ export const createProgramEnvironment = (context: Context, isPrelude: boolean): 
   return createSimpleEnvironment(context, isPrelude ? "prelude" : "programEnvironment");
 };
 
-export const createBlockEnvironment = (
-  context: Context,
-  name = "blockEnvironment",
-): Environment => {
-  return {
-    name,
-    tail: currentEnvironment(context),
-    head: {},
-    heap: new Heap(),
-    id: uniqueId(context),
-  };
-};
-
 // export const handleArrayCreation = (
 //   context: Context,
 //   array: Value[],
@@ -98,17 +86,18 @@ export const createBlockEnvironment = (
 // }
 
 export const currentEnvironment = (context: Context): Environment => {
-  return context.runtime.environments[0];
+  const envs = context.runtime.environments;
+  return envs[envs.length - 1];
 };
 
 export const getGlobalEnvironment = (context: Context): Environment | null => {
   const envs = context.runtime.environments;
-  return envs.length > 0 ? envs[envs.length - 1] : null;
+  return envs.length > 0 ? envs[0] : null;
 };
 
-export const popEnvironment = (context: Context) => context.runtime.environments.shift();
+export const popEnvironment = (context: Context) => context.runtime.environments.pop();
 
 export const pushEnvironment = (context: Context, environment: Environment) => {
-  context.runtime.environments.unshift(environment);
+  context.runtime.environments.push(environment);
   context.runtime.environmentTree.insert(environment);
 };

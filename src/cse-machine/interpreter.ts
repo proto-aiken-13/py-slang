@@ -7,6 +7,7 @@
 /* tslint:disable:max-classes-per-file */
 
 import { ExprNS, StmtNS } from "../ast-types";
+import { TokenType } from "../tokens";
 import * as error from "../errors/errors";
 import { BuiltinReassignmentError } from "../errors/errors";
 import { IOptions } from "../runner/pyRunner";
@@ -37,6 +38,7 @@ import {
   BinOpInstr,
   BoolOpInstr,
   BranchInstr,
+  ConditionalBoolOpInstr,
   EnvInstr,
   Instr,
   InstrType,
@@ -55,11 +57,6 @@ type CmdEvaluator = (
   isPrelude: boolean,
 ) => void;
 
-let cseFinalPrint = "";
-export function addPrint(str: string) {
-  cseFinalPrint = cseFinalPrint + str + "\n";
-}
-
 /**
  * Function that returns the appropriate Promise<Result> given the output of CSE machine evaluating, depending
  * on whether the program is finished evaluating, ran into a breakpoint or ran into an error.
@@ -73,7 +70,7 @@ export function CSEResultPromise(context: Context, value: Value): Promise<Result
       resolve({ status: "suspended-cse-eval", context });
     } else if (value.type === "error") {
       const msg = value.message;
-      const representation = new Representation(cseFinalPrint + msg);
+      const representation = new Representation(context.output + msg);
       resolve({ status: "finished", context, value, representation });
     } else {
       const representation = new Representation(toPythonString(value));
@@ -81,8 +78,6 @@ export function CSEResultPromise(context: Context, value: Value): Promise<Result
     }
   });
 }
-
-let source = "";
 
 /**
  * Function to be called when a program is to be interpreted using
@@ -99,14 +94,7 @@ export function evaluate(
   context: Context,
   options: RecursivePartial<IOptions> = {},
 ): Value {
-  source = code;
-  try {
-    // TODO: is undefined variables check necessary for Python?
-    // checkProgramForUndefinedVariables(program, context)
-  } catch (error) {
-    return { type: "error", message: error instanceof Error ? error.message : String(error) };
-  }
-
+  context.source = code;
   try {
     context.runtime.isRunning = true;
     context.control = new Control(program);
@@ -236,7 +224,7 @@ export function* generateCSEMachineStateStream(
   // Push first node to be evaluated into context.
   // The typeguard is there to guarantee that we are pushing a node (which should always be the case)
   if (command && isNode(command)) {
-    context.runtime.nodes.unshift(command);
+    context.runtime.nodes.push(command);
   }
 
   while (command) {
@@ -248,7 +236,10 @@ export function* generateCSEMachineStateStream(
 
     // Step limit reached, stop further evaluation
     if (!isPrelude && steps === stepLimit) {
-      handleRuntimeError(context, new error.StepLimitExceededError(source, command as ExprNS.Expr));
+      handleRuntimeError(
+        context,
+        new error.StepLimitExceededError(context.source, command as ExprNS.Expr),
+      );
     }
 
     if (!isPrelude && envChanging(command)) {
@@ -260,10 +251,10 @@ export function* generateCSEMachineStateStream(
     control.pop();
     if (isNode(command)) {
       const node = command as Node;
-      const nodeType = node.constructor.name;
+      const nodeType = node.kind;
 
-      context.runtime.nodes.shift();
-      context.runtime.nodes.unshift(command);
+      context.runtime.nodes.pop();
+      context.runtime.nodes.push(command);
 
       cmdEvaluators[nodeType](code, command, context, control, stash, isPrelude);
 
@@ -416,8 +407,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
     _isPrelude: boolean,
   ) {
     const boolOp = command as ExprNS.BoolOp;
-    control.push(instrCreator.boolOpInstr(boolOp.operator.type, boolOp));
-    control.push(boolOp.right);
+    control.push(instrCreator.conditionalBoolOpInstr(boolOp.operator.type, boolOp.right, boolOp));
     control.push(boolOp.left);
   },
 
@@ -540,7 +530,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
   ) {
     const functionDefNode = command as StmtNS.FunctionDef;
     const localVariables = scanForAssignments(functionDefNode.body);
-    const closure = Closure.makeFromFunctionDef(
+    const closure = Closure.make(
       functionDefNode,
       currentEnvironment(context),
       context,
@@ -559,12 +549,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
   ) {
     const lambdaNode = command as ExprNS.Lambda;
     const localVariables = scanForAssignments(lambdaNode.body);
-    const closure = Closure.makeFromLambda(
-      lambdaNode,
-      currentEnvironment(context),
-      context,
-      localVariables,
-    );
+    const closure = Closure.make(lambdaNode, currentEnvironment(context), context, localVariables);
     stash.push({ type: "closure", closure });
   },
 
@@ -605,11 +590,11 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
   ) {
     const ifNode = command as StmtNS.If;
     const branch = instrCreator.branchInstr(
-      { type: "StatementSequence", body: ifNode.body },
+      { kind: "StatementSequence", type: "StatementSequence", body: ifNode.body },
       ifNode.elseBlock
         ? Array.isArray(ifNode.elseBlock)
           ? // 'else' block
-            { type: "StatementSequence", body: ifNode.elseBlock }
+            { kind: "StatementSequence", type: "StatementSequence", body: ifNode.elseBlock }
           : // 'elif' block
             ifNode.elseBlock
         : // 'else' block dont exist
@@ -749,6 +734,36 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
     }
   },
 
+  [InstrType.CONDITIONAL_BOOL_OP]: function (
+    _code: string,
+    command: ControlItem,
+    _context: Context,
+    control: Control,
+    stash: Stash,
+    _isPrelude: boolean,
+  ) {
+    const instr = command as ConditionalBoolOpInstr;
+    const left = stash.peek()!;
+
+    if (instr.operator === TokenType.AND) {
+      // Short-circuit: if left is falsy, leave it on stash (don't evaluate right)
+      if (isFalsy(left)) {
+        return;
+      }
+      // Left is truthy: pop it and evaluate right
+      stash.pop();
+      control.push(instr.right);
+    } else {
+      // OR: if left is truthy, leave it on stash (don't evaluate right)
+      if (!isFalsy(left)) {
+        return;
+      }
+      // Left is falsy: pop it and evaluate right
+      stash.pop();
+      control.push(instr.right);
+    }
+  },
+
   [InstrType.POP]: function (
     _code: string,
     _command: ControlItem,
@@ -785,7 +800,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
       const closure = callable;
       control.push(instrCreator.resetInstr(instr.srcNode));
 
-      if (closure.node.constructor.name === "FunctionDef") {
+      if ((closure.node as Node).kind === "FunctionDef") {
         control.push(instrCreator.endOfFunctionBodyInstr(instr.srcNode));
       }
 
@@ -793,7 +808,7 @@ const cmdEvaluators: { [type: string]: CmdEvaluator } = {
       pushEnvironment(context, newEnv);
 
       const closureNode = closure.node;
-      if (closureNode.constructor.name === "FunctionDef") {
+      if ((closureNode as Node).kind === "FunctionDef") {
         const bodyStmts = (closureNode as StmtNS.FunctionDef).body.slice().reverse();
         control.push(...bodyStmts);
       } else {

@@ -1,11 +1,13 @@
 import { TokenType } from "../tokens";
 import { Environment } from "./environment";
+import { ExprNS } from "../ast-types";
 import {
   AppInstr,
   AssmtInstr,
   BinOpInstr,
   BoolOpInstr,
   BranchInstr,
+  ConditionalBoolOpInstr,
   EndOfFunctionBodyInstr,
   EnvInstr,
   Instr,
@@ -77,6 +79,17 @@ export const unOpInstr = (symbol: TokenType, srcNode: Node): UnOpInstr => ({
 export const boolOpInstr = (symbol: TokenType, srcNode: Node): BoolOpInstr => ({
   instrType: InstrType.BOOL_OP,
   symbol,
+  srcNode,
+});
+
+export const conditionalBoolOpInstr = (
+  operator: TokenType,
+  right: ExprNS.Expr,
+  srcNode: Node,
+): ConditionalBoolOpInstr => ({
+  instrType: InstrType.CONDITIONAL_BOOL_OP,
+  operator,
+  right,
   srcNode,
 });
 
