@@ -4,7 +4,7 @@ The following
 names are provided by the MISC library:
 \begin{itemize}
   \item
-    \href{https://sourceacademy.org/sicpjs/1.2.6\#ex_1.22}{\lstinline{get_time()}}:
+    \href{https://sourceacademy.org/sicpjs/1.2.6\#ex_1.22}{\lstinline{time_time()}}:
     \textit{primitive}, returns number of milliseconds elapsed since
     January 1, 1970 00:00:00 UTC
   \item \verb#int#\texttt{(x)}, \verb#float#\texttt{(x)},
@@ -37,12 +37,9 @@ names are provided by the MISC library:
     If the ``Cancel'' button is pressed, \texttt{input} returns a
     non-string value.
   \item
-    \href{https://sourceacademy.org/sicpjs/1.2.6\#footnote-7}{\texttt{print(x)}}:
-    \textit{primitive}, prints the value \texttt{x} in the
-    console; returns the argument \texttt{a}.
-  \item \texttt{print(x, s)}: \textit{primitive}, prints the
-    string \texttt{s}, followed by a space character, followed by the
-    value \texttt{x} in the console; returns the argument \texttt{x}.
+    \href{https://sourceacademy.org/sicpjs/1.2.6\#footnote-7}{\texttt{print(...)}}:
+    \textit{primitive}, prints its arguments (variadic) in the
+    console; returns \texttt{None}.
   \item
     \href{https://sourceacademy.org/sicpjs/1.2.6\#footnote-7}{\texttt{error(x)}}:
     \textit{primitive}, prints the value \texttt{x} in the
@@ -57,6 +54,6 @@ names are provided by the MISC library:
     of any call of \texttt{error} aborts the running program immediately.
 \end{itemize}
 All library functions can be assumed to run
-in $O(1)$ time, except \texttt{print}, \texttt{error} and \texttt{stringify},
+in $O(1)$ time, except \texttt{print}, \texttt{error} and \texttt{str},
 which run in $O(n)$ time, where $n$ is
 the size (number of components such as pairs) of their first argument.
