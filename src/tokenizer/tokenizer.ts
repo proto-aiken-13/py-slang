@@ -151,9 +151,6 @@ export class Tokenizer {
 
   private advance() {
     const res = this.source[this.current];
-    if (this.peek() == "\n") {
-      this.line += 1;
-    }
     this.current += 1;
     this.col += 1;
     return res;
@@ -541,7 +538,7 @@ export class Tokenizer {
           break;
         }
       case "\n":
-        if (this.parenthesesLevel > 0) {
+        if (this.parenthesesLevel > 0 || this.bracketsLevel > 0) {
           this.line += 1;
           this.col = 0;
           break;
