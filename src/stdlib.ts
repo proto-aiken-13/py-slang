@@ -1994,7 +1994,7 @@ export class BuiltInFunctions {
   static print(args: Value[], _source: string, _command: ControlItem, context: Context) {
     const output = args.map(arg => toPythonString(arg)).join(" ");
     context.output += output + "\n";
-    return { type: "undefined" };
+    return { type: "none" };
   }
 
   static str(args: Value[], _source: string, _command: ControlItem, _context: Context): Value {
