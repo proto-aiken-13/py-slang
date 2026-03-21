@@ -98,17 +98,18 @@ export const createBlockEnvironment = (
 // }
 
 export const currentEnvironment = (context: Context): Environment => {
-  return context.runtime.environments[0];
+  const envs = context.runtime.environments;
+  return envs[envs.length - 1];
 };
 
 export const getGlobalEnvironment = (context: Context): Environment | null => {
   const envs = context.runtime.environments;
-  return envs.length > 0 ? envs[envs.length - 1] : null;
+  return envs.length > 0 ? envs[0] : null;
 };
 
-export const popEnvironment = (context: Context) => context.runtime.environments.shift();
+export const popEnvironment = (context: Context) => context.runtime.environments.pop();
 
 export const pushEnvironment = (context: Context, environment: Environment) => {
-  context.runtime.environments.unshift(environment);
+  context.runtime.environments.push(environment);
   context.runtime.environmentTree.insert(environment);
 };

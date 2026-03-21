@@ -231,7 +231,7 @@ export function* generateCSEMachineStateStream(
   // Push first node to be evaluated into context.
   // The typeguard is there to guarantee that we are pushing a node (which should always be the case)
   if (command && isNode(command)) {
-    context.runtime.nodes.unshift(command);
+    context.runtime.nodes.push(command);
   }
 
   while (command) {
@@ -257,8 +257,8 @@ export function* generateCSEMachineStateStream(
       const node = command as Node;
       const nodeType = (node as any).kind ?? node.constructor.name;
 
-      context.runtime.nodes.shift();
-      context.runtime.nodes.unshift(command);
+      context.runtime.nodes.pop();
+      context.runtime.nodes.push(command);
 
       cmdEvaluators[nodeType](code, command, context, control, stash, isPrelude);
 
