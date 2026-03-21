@@ -178,7 +178,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
     },
   ],
   [
-    "InstrType.FOR",
+    InstrType.FOR,
     (item: ControlItem) => {
       const instr = item as ForInstr;
       item.isEnvDependent =
@@ -190,7 +190,7 @@ const propertySetter: PropertySetter = new Map<string, Transformer>([
     },
   ],
   [
-    "InstrType.WHILE",
+    InstrType.WHILE,
     (item: ControlItem) => {
       const instr = item as WhileInstr;
       item.isEnvDependent = isEnvDependent(instr.body) || isEnvDependent(instr.test);
