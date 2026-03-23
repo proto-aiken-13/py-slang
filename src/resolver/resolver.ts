@@ -280,8 +280,8 @@ export class Resolver implements StmtNS.Visitor<void>, ExprNS.Visitor<void> {
     return this.functionEnvironments;
   }
 
-  resolve(stmt: Stmt[] | Stmt | Expr[] | Expr | null) {
-    if (stmt === null) {
+  resolve(stmt: Stmt[] | Stmt | Expr[] | Expr | null | undefined) {
+    if (stmt == null) {
       return;
     }
     if (stmt instanceof Array) {
