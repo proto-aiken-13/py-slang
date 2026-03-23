@@ -2,7 +2,7 @@ import type { SVMLBoxType } from "./types";
 import { isSVMLObject } from "./types";
 
 // Minimal vm prelude for py-slang SVML compiler
-export const vmPrelude = ''
+export const vmPrelude = "";
 
 // Map primitive function name to runtime opcodes
 export const PRIMITIVE_FUNCTIONS: Map<string, number> = new Map([
@@ -18,13 +18,17 @@ export const PRIMITIVE_FUNCTIONS: Map<string, number> = new Map([
   ["round", 26],
   ["range", 30],
   ["len", 31],
-])
+]);
 
 /**
  * Execute a primitive function
  * This is called by the TypeScript interpreter for primitive operations
  */
-export function executePrimitive(primitiveIndex: number, args: SVMLBoxType[], sendOutput: (message: string) => void): SVMLBoxType {
+export function executePrimitive(
+  primitiveIndex: number,
+  args: SVMLBoxType[],
+  sendOutput: (message: string) => void,
+): SVMLBoxType {
   // Math primitives receive numeric args at runtime; cast at the boundary
   const numArgs = args as number[];
   switch (primitiveIndex) {
@@ -64,16 +68,16 @@ export function executePrimitive(primitiveIndex: number, args: SVMLBoxType[], se
       if (args.length !== 1) throw new Error("round expects 1 argument");
       return Math.round(numArgs[0]);
 
-    case 30: { // range
+    case 30: {
+      // range
       const [a, b, c] = numArgs;
       const [start, stop, step] =
-        args.length === 1 ? [0, a, 1] :
-        args.length === 2 ? [a, b, 1] :
-                            [a, b, c];
+        args.length === 1 ? [0, a, 1] : args.length === 2 ? [a, b, 1] : [a, b, c];
       return { type: "iterator", kind: "range", current: start, stop, step };
     }
 
-    case 31: { // len
+    case 31: {
+      // len
       const v = args[0];
       if (isSVMLObject(v) && v.type === "array") return v.elements.length;
       throw new Error("len() requires a list");

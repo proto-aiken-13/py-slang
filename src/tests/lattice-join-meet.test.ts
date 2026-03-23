@@ -5,13 +5,7 @@
  * Join = bitwise OR, Meet = bitwise AND for both IntRef and BoolRef.
  */
 
-import {
-  IntRef,
-  BoolRef,
-  INT_BIT,
-  BOOL_BIT,
-  STR_BIT,
-} from "../types/abstract-value";
+import { IntRef, BoolRef, INT_BIT, BOOL_BIT, STR_BIT } from "../types/abstract-value";
 import {
   joinIntRef,
   meetIntRef,
@@ -41,43 +35,38 @@ import { negSign } from "../specialization/transfer";
 // ---------------------------------------------------------------------------
 
 const ALL_INT_REFS: IntRef[] = [
-  IntRef.Bottom,  // 0
-  IntRef.Neg,     // 1
-  IntRef.Zero,    // 2
-  IntRef.NonPos,  // 3  (Neg | Zero)
-  IntRef.Pos,     // 4
+  IntRef.Bottom, // 0
+  IntRef.Neg, // 1
+  IntRef.Zero, // 2
+  IntRef.NonPos, // 3  (Neg | Zero)
+  IntRef.Pos, // 4
   IntRef.NonZero, // 5  (Neg | Pos)
-  IntRef.NonNeg,  // 6  (Zero | Pos)
-  IntRef.Top,     // 7  (Neg | Zero | Pos)
+  IntRef.NonNeg, // 6  (Zero | Pos)
+  IntRef.Top, // 7  (Neg | Zero | Pos)
 ];
 
 const ALL_BOOL_REFS: BoolRef[] = [
   BoolRef.Bottom, // 0
-  BoolRef.True,   // 1
-  BoolRef.False,  // 2
-  BoolRef.Top,    // 3
+  BoolRef.True, // 1
+  BoolRef.False, // 2
+  BoolRef.Top, // 3
 ];
 
 // Pre-compute all pairs
-const INT_PAIRS: Array<[IntRef, IntRef]> = ALL_INT_REFS.flatMap((a) =>
-  ALL_INT_REFS.map((b) => [a, b] as [IntRef, IntRef]),
+const INT_PAIRS: Array<[IntRef, IntRef]> = ALL_INT_REFS.flatMap(a =>
+  ALL_INT_REFS.map(b => [a, b] as [IntRef, IntRef]),
 );
 
-const BOOL_PAIRS: Array<[BoolRef, BoolRef]> = ALL_BOOL_REFS.flatMap((a) =>
-  ALL_BOOL_REFS.map((b) => [a, b] as [BoolRef, BoolRef]),
+const BOOL_PAIRS: Array<[BoolRef, BoolRef]> = ALL_BOOL_REFS.flatMap(a =>
+  ALL_BOOL_REFS.map(b => [a, b] as [BoolRef, BoolRef]),
 );
 
-const INT_TRIPLES: Array<[IntRef, IntRef, IntRef]> = ALL_INT_REFS.flatMap((a) =>
-  ALL_INT_REFS.flatMap((b) =>
-    ALL_INT_REFS.map((c) => [a, b, c] as [IntRef, IntRef, IntRef]),
-  ),
+const INT_TRIPLES: Array<[IntRef, IntRef, IntRef]> = ALL_INT_REFS.flatMap(a =>
+  ALL_INT_REFS.flatMap(b => ALL_INT_REFS.map(c => [a, b, c] as [IntRef, IntRef, IntRef])),
 );
 
-const BOOL_TRIPLES: Array<[BoolRef, BoolRef, BoolRef]> = ALL_BOOL_REFS.flatMap(
-  (a) =>
-    ALL_BOOL_REFS.flatMap((b) =>
-      ALL_BOOL_REFS.map((c) => [a, b, c] as [BoolRef, BoolRef, BoolRef]),
-    ),
+const BOOL_TRIPLES: Array<[BoolRef, BoolRef, BoolRef]> = ALL_BOOL_REFS.flatMap(a =>
+  ALL_BOOL_REFS.flatMap(b => ALL_BOOL_REFS.map(c => [a, b, c] as [BoolRef, BoolRef, BoolRef])),
 );
 
 // ===================================================================
@@ -85,12 +74,9 @@ const BOOL_TRIPLES: Array<[BoolRef, BoolRef, BoolRef]> = ALL_BOOL_REFS.flatMap(
 // ===================================================================
 
 describe("IntRef join = bitwise OR (all 64 pairs)", () => {
-  test.each(INT_PAIRS)(
-    "joinIntRef(%i, %i) === %i | %i",
-    (a, b) => {
-      expect(joinIntRef(a, b)).toBe((a | b) as IntRef);
-    },
-  );
+  test.each(INT_PAIRS)("joinIntRef(%i, %i) === %i | %i", (a, b) => {
+    expect(joinIntRef(a, b)).toBe((a | b) as IntRef);
+  });
 });
 
 // ===================================================================
@@ -98,12 +84,9 @@ describe("IntRef join = bitwise OR (all 64 pairs)", () => {
 // ===================================================================
 
 describe("IntRef meet = bitwise AND (all 64 pairs)", () => {
-  test.each(INT_PAIRS)(
-    "meetIntRef(%i, %i) === %i & %i",
-    (a, b) => {
-      expect(meetIntRef(a, b)).toBe((a & b) as IntRef);
-    },
-  );
+  test.each(INT_PAIRS)("meetIntRef(%i, %i) === %i & %i", (a, b) => {
+    expect(meetIntRef(a, b)).toBe((a & b) as IntRef);
+  });
 });
 
 // ===================================================================
@@ -111,12 +94,9 @@ describe("IntRef meet = bitwise AND (all 64 pairs)", () => {
 // ===================================================================
 
 describe("BoolRef join = bitwise OR (all 16 pairs)", () => {
-  test.each(BOOL_PAIRS)(
-    "joinBoolRef(%i, %i) === %i | %i",
-    (a, b) => {
-      expect(joinBoolRef(a, b)).toBe((a | b) as BoolRef);
-    },
-  );
+  test.each(BOOL_PAIRS)("joinBoolRef(%i, %i) === %i | %i", (a, b) => {
+    expect(joinBoolRef(a, b)).toBe((a | b) as BoolRef);
+  });
 });
 
 // ===================================================================
@@ -124,12 +104,9 @@ describe("BoolRef join = bitwise OR (all 16 pairs)", () => {
 // ===================================================================
 
 describe("BoolRef meet = bitwise AND (all 16 pairs)", () => {
-  test.each(BOOL_PAIRS)(
-    "meetBoolRef(%i, %i) === %i & %i",
-    (a, b) => {
-      expect(meetBoolRef(a, b)).toBe((a & b) as BoolRef);
-    },
-  );
+  test.each(BOOL_PAIRS)("meetBoolRef(%i, %i) === %i & %i", (a, b) => {
+    expect(meetBoolRef(a, b)).toBe((a & b) as BoolRef);
+  });
 });
 
 // ===================================================================
@@ -139,19 +116,13 @@ describe("BoolRef meet = bitwise AND (all 16 pairs)", () => {
 describe("IntRef lattice algebraic properties", () => {
   // Commutativity
   describe("commutativity", () => {
-    test.each(INT_PAIRS)(
-      "joinIntRef(%i, %i) === joinIntRef(%i, %i) [commutative join]",
-      (a, b) => {
-        expect(joinIntRef(a, b)).toBe(joinIntRef(b, a));
-      },
-    );
+    test.each(INT_PAIRS)("joinIntRef(%i, %i) === joinIntRef(%i, %i) [commutative join]", (a, b) => {
+      expect(joinIntRef(a, b)).toBe(joinIntRef(b, a));
+    });
 
-    test.each(INT_PAIRS)(
-      "meetIntRef(%i, %i) === meetIntRef(%i, %i) [commutative meet]",
-      (a, b) => {
-        expect(meetIntRef(a, b)).toBe(meetIntRef(b, a));
-      },
-    );
+    test.each(INT_PAIRS)("meetIntRef(%i, %i) === meetIntRef(%i, %i) [commutative meet]", (a, b) => {
+      expect(meetIntRef(a, b)).toBe(meetIntRef(b, a));
+    });
   });
 
   // Associativity
@@ -159,184 +130,128 @@ describe("IntRef lattice algebraic properties", () => {
     test.each(INT_TRIPLES)(
       "joinIntRef(joinIntRef(%i,%i),%i) === joinIntRef(%i,joinIntRef(%i,%i))",
       (a, b, c) => {
-        expect(joinIntRef(joinIntRef(a, b), c)).toBe(
-          joinIntRef(a, joinIntRef(b, c)),
-        );
+        expect(joinIntRef(joinIntRef(a, b), c)).toBe(joinIntRef(a, joinIntRef(b, c)));
       },
     );
 
     test.each(INT_TRIPLES)(
       "meetIntRef(meetIntRef(%i,%i),%i) === meetIntRef(%i,meetIntRef(%i,%i))",
       (a, b, c) => {
-        expect(meetIntRef(meetIntRef(a, b), c)).toBe(
-          meetIntRef(a, meetIntRef(b, c)),
-        );
+        expect(meetIntRef(meetIntRef(a, b), c)).toBe(meetIntRef(a, meetIntRef(b, c)));
       },
     );
   });
 
   // Idempotent
   describe("idempotent", () => {
-    test.each(ALL_INT_REFS)("joinIntRef(%i, %i) === %i", (a) => {
+    test.each(ALL_INT_REFS)("joinIntRef(%i, %i) === %i", a => {
       expect(joinIntRef(a, a)).toBe(a);
     });
 
-    test.each(ALL_INT_REFS)("meetIntRef(%i, %i) === %i", (a) => {
+    test.each(ALL_INT_REFS)("meetIntRef(%i, %i) === %i", a => {
       expect(meetIntRef(a, a)).toBe(a);
     });
   });
 
   // Absorption
   describe("absorption", () => {
-    test.each(INT_PAIRS)(
-      "joinIntRef(%i, meetIntRef(%i, %i)) === %i [absorption]",
-      (a, b) => {
-        expect(joinIntRef(a, meetIntRef(a, b))).toBe(a);
-      },
-    );
+    test.each(INT_PAIRS)("joinIntRef(%i, meetIntRef(%i, %i)) === %i [absorption]", (a, b) => {
+      expect(joinIntRef(a, meetIntRef(a, b))).toBe(a);
+    });
 
-    test.each(INT_PAIRS)(
-      "meetIntRef(%i, joinIntRef(%i, %i)) === %i [absorption]",
-      (a, b) => {
-        expect(meetIntRef(a, joinIntRef(a, b))).toBe(a);
-      },
-    );
+    test.each(INT_PAIRS)("meetIntRef(%i, joinIntRef(%i, %i)) === %i [absorption]", (a, b) => {
+      expect(meetIntRef(a, joinIntRef(a, b))).toBe(a);
+    });
   });
 
   // Identity
   describe("identity", () => {
-    test.each(ALL_INT_REFS)(
-      "joinIntRef(%i, Bottom) === %i [join identity]",
-      (a) => {
-        expect(joinIntRef(a, IntRef.Bottom)).toBe(a);
-      },
-    );
+    test.each(ALL_INT_REFS)("joinIntRef(%i, Bottom) === %i [join identity]", a => {
+      expect(joinIntRef(a, IntRef.Bottom)).toBe(a);
+    });
 
-    test.each(ALL_INT_REFS)(
-      "meetIntRef(%i, Top) === %i [meet identity]",
-      (a) => {
-        expect(meetIntRef(a, IntRef.Top)).toBe(a);
-      },
-    );
+    test.each(ALL_INT_REFS)("meetIntRef(%i, Top) === %i [meet identity]", a => {
+      expect(meetIntRef(a, IntRef.Top)).toBe(a);
+    });
   });
 
   // Annihilator
   describe("annihilator", () => {
-    test.each(ALL_INT_REFS)(
-      "joinIntRef(%i, Top) === Top [join annihilator]",
-      (a) => {
-        expect(joinIntRef(a, IntRef.Top)).toBe(IntRef.Top);
-      },
-    );
+    test.each(ALL_INT_REFS)("joinIntRef(%i, Top) === Top [join annihilator]", a => {
+      expect(joinIntRef(a, IntRef.Top)).toBe(IntRef.Top);
+    });
 
-    test.each(ALL_INT_REFS)(
-      "meetIntRef(%i, Bottom) === Bottom [meet annihilator]",
-      (a) => {
-        expect(meetIntRef(a, IntRef.Bottom)).toBe(IntRef.Bottom);
-      },
-    );
+    test.each(ALL_INT_REFS)("meetIntRef(%i, Bottom) === Bottom [meet annihilator]", a => {
+      expect(meetIntRef(a, IntRef.Bottom)).toBe(IntRef.Bottom);
+    });
   });
 });
 
 describe("BoolRef lattice algebraic properties", () => {
   // Commutativity
   describe("commutativity", () => {
-    test.each(BOOL_PAIRS)(
-      "joinBoolRef(%i, %i) [commutative]",
-      (a, b) => {
-        expect(joinBoolRef(a, b)).toBe(joinBoolRef(b, a));
-      },
-    );
+    test.each(BOOL_PAIRS)("joinBoolRef(%i, %i) [commutative]", (a, b) => {
+      expect(joinBoolRef(a, b)).toBe(joinBoolRef(b, a));
+    });
 
-    test.each(BOOL_PAIRS)(
-      "meetBoolRef(%i, %i) [commutative]",
-      (a, b) => {
-        expect(meetBoolRef(a, b)).toBe(meetBoolRef(b, a));
-      },
-    );
+    test.each(BOOL_PAIRS)("meetBoolRef(%i, %i) [commutative]", (a, b) => {
+      expect(meetBoolRef(a, b)).toBe(meetBoolRef(b, a));
+    });
   });
 
   // Associativity
   describe("associativity", () => {
-    test.each(BOOL_TRIPLES)(
-      "joinBoolRef associative (%i, %i, %i)",
-      (a, b, c) => {
-        expect(joinBoolRef(joinBoolRef(a, b), c)).toBe(
-          joinBoolRef(a, joinBoolRef(b, c)),
-        );
-      },
-    );
+    test.each(BOOL_TRIPLES)("joinBoolRef associative (%i, %i, %i)", (a, b, c) => {
+      expect(joinBoolRef(joinBoolRef(a, b), c)).toBe(joinBoolRef(a, joinBoolRef(b, c)));
+    });
 
-    test.each(BOOL_TRIPLES)(
-      "meetBoolRef associative (%i, %i, %i)",
-      (a, b, c) => {
-        expect(meetBoolRef(meetBoolRef(a, b), c)).toBe(
-          meetBoolRef(a, meetBoolRef(b, c)),
-        );
-      },
-    );
+    test.each(BOOL_TRIPLES)("meetBoolRef associative (%i, %i, %i)", (a, b, c) => {
+      expect(meetBoolRef(meetBoolRef(a, b), c)).toBe(meetBoolRef(a, meetBoolRef(b, c)));
+    });
   });
 
   // Idempotent
   describe("idempotent", () => {
-    test.each(ALL_BOOL_REFS)("joinBoolRef(%i, %i) === %i", (a) => {
+    test.each(ALL_BOOL_REFS)("joinBoolRef(%i, %i) === %i", a => {
       expect(joinBoolRef(a, a)).toBe(a);
     });
 
-    test.each(ALL_BOOL_REFS)("meetBoolRef(%i, %i) === %i", (a) => {
+    test.each(ALL_BOOL_REFS)("meetBoolRef(%i, %i) === %i", a => {
       expect(meetBoolRef(a, a)).toBe(a);
     });
   });
 
   // Absorption
   describe("absorption", () => {
-    test.each(BOOL_PAIRS)(
-      "joinBoolRef(%i, meetBoolRef(%i, %i)) === %i",
-      (a, b) => {
-        expect(joinBoolRef(a, meetBoolRef(a, b))).toBe(a);
-      },
-    );
+    test.each(BOOL_PAIRS)("joinBoolRef(%i, meetBoolRef(%i, %i)) === %i", (a, b) => {
+      expect(joinBoolRef(a, meetBoolRef(a, b))).toBe(a);
+    });
 
-    test.each(BOOL_PAIRS)(
-      "meetBoolRef(%i, joinBoolRef(%i, %i)) === %i",
-      (a, b) => {
-        expect(meetBoolRef(a, joinBoolRef(a, b))).toBe(a);
-      },
-    );
+    test.each(BOOL_PAIRS)("meetBoolRef(%i, joinBoolRef(%i, %i)) === %i", (a, b) => {
+      expect(meetBoolRef(a, joinBoolRef(a, b))).toBe(a);
+    });
   });
 
   // Identity
   describe("identity", () => {
-    test.each(ALL_BOOL_REFS)(
-      "joinBoolRef(%i, Bottom) === %i",
-      (a) => {
-        expect(joinBoolRef(a, BoolRef.Bottom)).toBe(a);
-      },
-    );
+    test.each(ALL_BOOL_REFS)("joinBoolRef(%i, Bottom) === %i", a => {
+      expect(joinBoolRef(a, BoolRef.Bottom)).toBe(a);
+    });
 
-    test.each(ALL_BOOL_REFS)(
-      "meetBoolRef(%i, Top) === %i",
-      (a) => {
-        expect(meetBoolRef(a, BoolRef.Top)).toBe(a);
-      },
-    );
+    test.each(ALL_BOOL_REFS)("meetBoolRef(%i, Top) === %i", a => {
+      expect(meetBoolRef(a, BoolRef.Top)).toBe(a);
+    });
   });
 
   // Annihilator
   describe("annihilator", () => {
-    test.each(ALL_BOOL_REFS)(
-      "joinBoolRef(%i, Top) === Top",
-      (a) => {
-        expect(joinBoolRef(a, BoolRef.Top)).toBe(BoolRef.Top);
-      },
-    );
+    test.each(ALL_BOOL_REFS)("joinBoolRef(%i, Top) === Top", a => {
+      expect(joinBoolRef(a, BoolRef.Top)).toBe(BoolRef.Top);
+    });
 
-    test.each(ALL_BOOL_REFS)(
-      "meetBoolRef(%i, Bottom) === Bottom",
-      (a) => {
-        expect(meetBoolRef(a, BoolRef.Bottom)).toBe(BoolRef.Bottom);
-      },
-    );
+    test.each(ALL_BOOL_REFS)("meetBoolRef(%i, Bottom) === Bottom", a => {
+      expect(meetBoolRef(a, BoolRef.Bottom)).toBe(BoolRef.Bottom);
+    });
   });
 });
 
@@ -653,25 +568,22 @@ describe("negSign correctness", () => {
   // Equivalently: swap the Neg and Pos bits.
 
   const NEG_SIGN_TABLE: Array<[IntRef, IntRef]> = [
-    [IntRef.Bottom, IntRef.Bottom],   // 0 -> 0
-    [IntRef.Neg, IntRef.Pos],         // 1 -> 4
-    [IntRef.Zero, IntRef.Zero],       // 2 -> 2
-    [IntRef.NonPos, IntRef.NonNeg],   // 3 (Neg|Zero) -> 6 (Pos|Zero)
-    [IntRef.Pos, IntRef.Neg],         // 4 -> 1
+    [IntRef.Bottom, IntRef.Bottom], // 0 -> 0
+    [IntRef.Neg, IntRef.Pos], // 1 -> 4
+    [IntRef.Zero, IntRef.Zero], // 2 -> 2
+    [IntRef.NonPos, IntRef.NonNeg], // 3 (Neg|Zero) -> 6 (Pos|Zero)
+    [IntRef.Pos, IntRef.Neg], // 4 -> 1
     [IntRef.NonZero, IntRef.NonZero], // 5 (Neg|Pos) -> 5 (Pos|Neg)
-    [IntRef.NonNeg, IntRef.NonPos],   // 6 (Zero|Pos) -> 3 (Zero|Neg)
-    [IntRef.Top, IntRef.Top],         // 7 -> 7
+    [IntRef.NonNeg, IntRef.NonPos], // 6 (Zero|Pos) -> 3 (Zero|Neg)
+    [IntRef.Top, IntRef.Top], // 7 -> 7
   ];
 
-  test.each(NEG_SIGN_TABLE)(
-    "negSign(%i) === %i",
-    (input, expected) => {
-      expect(negSign(input)).toBe(expected);
-    },
-  );
+  test.each(NEG_SIGN_TABLE)("negSign(%i) === %i", (input, expected) => {
+    expect(negSign(input)).toBe(expected);
+  });
 
   // Self-inverse property
-  test.each(ALL_INT_REFS)("negSign(negSign(%i)) === %i [involution]", (a) => {
+  test.each(ALL_INT_REFS)("negSign(negSign(%i)) === %i [involution]", a => {
     expect(negSign(negSign(a))).toBe(a);
   });
 

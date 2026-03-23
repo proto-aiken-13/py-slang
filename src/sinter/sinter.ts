@@ -20,17 +20,12 @@ export default async function init(props: Record<string, unknown> = {}): Promise
   const module = await sinterwasm({
     instantiateWasm(
       imports: WebAssembly.Imports,
-      callback: (
-        instance: WebAssembly.Instance,
-        module: WebAssembly.Module
-      ) => void
+      callback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ) {
-      return wasm(imports).then(
-        (result: WebAssembly.WebAssemblyInstantiatedSource) => {
-          callback(result.instance, result.module);
-          return result.instance.exports;
-        }
-      );
+      return wasm(imports).then((result: WebAssembly.WebAssemblyInstantiatedSource) => {
+        callback(result.instance, result.module);
+        return result.instance.exports;
+      });
     },
     ...props,
   });
@@ -67,7 +62,7 @@ export default async function init(props: Record<string, unknown> = {}): Promise
       case 6: // sinter_type_string = 6,
         // raw32 is a pointer to null-terminated string
         const bytearray = module.HEAPU8.subarray(raw32, module.HEAPU8.indexOf(0, raw32));
-        const decoder = new TextDecoder('utf-8');
+        const decoder = new TextDecoder("utf-8");
         return { type: "string", value: decoder.decode(bytearray) };
       case 7: // sinter_type_array = 7,
         throw new Error("Type not yet supported");

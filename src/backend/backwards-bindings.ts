@@ -1,4 +1,8 @@
-import type { SpecializableFunctionNode, FunctionProfile, TypeInformation } from "../specialization/types";
+import type {
+  SpecializableFunctionNode,
+  FunctionProfile,
+  TypeInformation,
+} from "../specialization/types";
 
 /**
  * Maps runtime IDs back to their registered AST nodes.
@@ -29,15 +33,16 @@ export class BackwardsBindings<ID extends number | string = number> {
    *
    * Unknown IDs are silently dropped. Safe to call multiple times.
    */
-  resolve(
-    observations: ReadonlyMap<ID, FunctionProfile[]>,
-  ): TypeInformation {
+  resolve(observations: ReadonlyMap<ID, FunctionProfile[]>): TypeInformation {
     const result = new Map<SpecializableFunctionNode, FunctionProfile[]>();
     for (const [id, rawProfiles] of observations) {
       const node = this.nodeById.get(id);
       if (!node) continue;
       // Snapshot each profile: callers must not mutate the returned TypeInformation.
-      result.set(node, rawProfiles.map(p => new Map(p) as FunctionProfile));
+      result.set(
+        node,
+        rawProfiles.map(p => new Map(p) as FunctionProfile),
+      );
     }
     return result;
   }

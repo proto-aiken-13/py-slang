@@ -162,7 +162,7 @@ export class SVMLCompiler
       throw new Error(`Function environment not found`);
     }
     for (const param of node.parameters) {
-        nextEnvironment.lookupNameCurrentEnvWithError(param);
+      nextEnvironment.lookupNameCurrentEnvWithError(param);
     }
     const numArgs = node.parameters.length;
     const builder = this.builder.createChildBuilder(numArgs);
@@ -186,7 +186,7 @@ export class SVMLCompiler
     }
 
     compiler.envSlotCounters.set(nextEnvironment, numArgs);
-    
+
     return compiler;
   }
 
@@ -197,7 +197,7 @@ export class SVMLCompiler
     this.compile(program);
 
     const allBuilders = this.builder.getAllBuilders(true);
-    const functions = allBuilders.map((b) => b.build());
+    const functions = allBuilders.map(b => b.build());
 
     return new SVMLProgram(0, functions, this.functionASTMap);
   }
@@ -356,14 +356,10 @@ export class SVMLCompiler
     const isInt = valueInfo && valueInfo.sound.kinds === INT_BIT;
     const isBool = valueInfo && valueInfo.sound.kinds === BOOL_BIT;
     if (annotation.envLevel === 0) {
-      const opcode = isInt ? OpCodes.LDLF
-        : isBool ? OpCodes.LDLB
-        : OpCodes.LDLG;
+      const opcode = isInt ? OpCodes.LDLF : isBool ? OpCodes.LDLB : OpCodes.LDLG;
       this.builder.emitUnary(opcode, annotation.slot);
     } else {
-      const opcode = isInt ? OpCodes.LDPF
-        : isBool ? OpCodes.LDPB
-        : OpCodes.LDPG;
+      const opcode = isInt ? OpCodes.LDPF : isBool ? OpCodes.LDPB : OpCodes.LDPG;
       this.builder.emitBinary(opcode, annotation.slot, annotation.envLevel);
     }
     return { maxStackSize: 1 };
@@ -379,14 +375,10 @@ export class SVMLCompiler
     const isInt = valueInfo && valueInfo.sound.kinds === INT_BIT;
     const isBool = valueInfo && valueInfo.sound.kinds === BOOL_BIT;
     if (annotation.envLevel === 0) {
-      const opcode = isInt ? OpCodes.STLF
-        : isBool ? OpCodes.STLB
-        : OpCodes.STLG;
+      const opcode = isInt ? OpCodes.STLF : isBool ? OpCodes.STLB : OpCodes.STLG;
       this.builder.emitUnary(opcode, annotation.slot);
     } else {
-      const opcode = isInt ? OpCodes.STPF
-        : isBool ? OpCodes.STPB
-        : OpCodes.STPG;
+      const opcode = isInt ? OpCodes.STPF : isBool ? OpCodes.STPB : OpCodes.STPG;
       this.builder.emitBinary(opcode, annotation.slot, annotation.envLevel);
     }
   }
@@ -396,11 +388,7 @@ export class SVMLCompiler
 
     if (annotation.isPrimitive) {
       const primitiveOpcode = this.isTailCall ? OpCodes.CALLTP : OpCodes.CALLP;
-      this.builder.emitPrimitiveCall(
-        primitiveOpcode,
-        annotation.primitiveIndex!,
-        numArgs
-      );
+      this.builder.emitPrimitiveCall(primitiveOpcode, annotation.primitiveIndex!, numArgs);
     } else {
       const userOpcode = this.isTailCall ? OpCodes.CALLT : OpCodes.CALL;
       this.builder.emitCall(userOpcode, numArgs);
@@ -422,11 +410,7 @@ export class SVMLCompiler
           this.builder.emitNullary(value ? OpCodes.LGCB1 : OpCodes.LGCB0);
           break;
         case "number":
-          if (
-            Number.isInteger(value) &&
-            -2_147_483_648 <= value &&
-            value <= 2_147_483_647
-          ) {
+          if (Number.isInteger(value) && -2_147_483_648 <= value && value <= 2_147_483_647) {
             this.builder.emitUnary(OpCodes.LGCI, value);
           } else {
             this.builder.emitUnary(OpCodes.LGCF64, value);
@@ -445,11 +429,7 @@ export class SVMLCompiler
 
   visitBigIntLiteralExpr(expr: ExprNS.BigIntLiteral): ExpressionResult {
     const numValue = Number(expr.value);
-    if (
-      Number.isInteger(numValue) &&
-      -2_147_483_648 <= numValue &&
-      numValue <= 2_147_483_647
-    ) {
+    if (Number.isInteger(numValue) && -2_147_483_648 <= numValue && numValue <= 2_147_483_647) {
       this.builder.emitUnary(OpCodes.LGCI, numValue);
     } else {
       this.builder.emitUnary(OpCodes.LGCF64, numValue);
@@ -478,9 +458,9 @@ export class SVMLCompiler
     // Fill each element
     for (let i = 0; i < n; i++) {
       this.builder.emitUnary(OpCodes.LDLG, tmpSlot); // push array
-      this.builder.emitUnary(OpCodes.LGCI, i);        // push index
-      this.compile(expr.elements[i]);                  // push value
-      this.builder.emitNullary(OpCodes.STAG);          // arr[i] = value
+      this.builder.emitUnary(OpCodes.LGCI, i); // push index
+      this.compile(expr.elements[i]); // push value
+      this.builder.emitNullary(OpCodes.STAG); // arr[i] = value
     }
 
     // Leave array as result
@@ -527,7 +507,10 @@ export class SVMLCompiler
   /**
    * Convert Python comparison operator token to SVML binary operator
    */
-  private getCompareOpCode(operator: Token, specialization: "generic" | "number" | "boolean"): number {
+  private getCompareOpCode(
+    operator: Token,
+    specialization: "generic" | "number" | "boolean",
+  ): number {
     switch (operator.type) {
       case TokenType.LESS:
         return specialization === "number" ? OpCodes.LTF : OpCodes.LTG;
@@ -538,13 +521,17 @@ export class SVMLCompiler
       case TokenType.GREATEREQUAL:
         return specialization === "number" ? OpCodes.GEF : OpCodes.GEG;
       case TokenType.DOUBLEEQUAL:
-        return specialization === "number" ? OpCodes.EQF
-          : specialization === "boolean" ? OpCodes.EQB
-          : OpCodes.EQG;
+        return specialization === "number"
+          ? OpCodes.EQF
+          : specialization === "boolean"
+            ? OpCodes.EQB
+            : OpCodes.EQG;
       case TokenType.NOTEQUAL:
-        return specialization === "number" ? OpCodes.NEQF
-          : specialization === "boolean" ? OpCodes.NEQB
-          : OpCodes.NEQG;
+        return specialization === "number"
+          ? OpCodes.NEQF
+          : specialization === "boolean"
+            ? OpCodes.NEQB
+            : OpCodes.NEQG;
       default:
         throw new Error(`Unsupported comparison operator: ${operator.lexeme}`);
     }
@@ -561,7 +548,7 @@ export class SVMLCompiler
       const rightZero = rightInfo && rightInfo.sound.intRef === IntRef.Zero;
 
       if (expr.operator.type === TokenType.PLUS || expr.operator.type === TokenType.MINUS) {
-        if (rightZero) return this.compile(expr.left);    // x + 0, x - 0
+        if (rightZero) return this.compile(expr.left); // x + 0, x - 0
         if (leftZero && expr.operator.type === TokenType.PLUS) return this.compile(expr.right); // 0 + x
       }
       if (expr.operator.type === TokenType.STAR) {
@@ -585,10 +572,7 @@ export class SVMLCompiler
     this.builder.emitNullary(opcode);
 
     return {
-      maxStackSize: Math.max(
-        leftResult.maxStackSize,
-        1 + rightResult.maxStackSize
-      ),
+      maxStackSize: Math.max(leftResult.maxStackSize, 1 + rightResult.maxStackSize),
     };
   }
 
@@ -614,9 +598,7 @@ export class SVMLCompiler
     const leftIsBool = leftInfo && leftInfo.sound.kinds === BOOL_BIT;
     const rightIsBool = rightInfo && rightInfo.sound.kinds === BOOL_BIT;
     const specialization: "generic" | "number" | "boolean" =
-      leftIsInt && rightIsInt ? "number"
-      : leftIsBool && rightIsBool ? "boolean"
-      : "generic";
+      leftIsInt && rightIsInt ? "number" : leftIsBool && rightIsBool ? "boolean" : "generic";
     const opcode = this.getCompareOpCode(expr.operator, specialization);
 
     // Compile left operand
@@ -629,17 +611,13 @@ export class SVMLCompiler
     this.builder.emitNullary(opcode);
 
     return {
-      maxStackSize: Math.max(
-        leftResult.maxStackSize,
-        1 + rightResult.maxStackSize
-      ),
+      maxStackSize: Math.max(leftResult.maxStackSize, 1 + rightResult.maxStackSize),
     };
   }
 
   visitBoolOpExpr(expr: ExprNS.BoolOp): ExpressionResult {
     const leftInfo = this.getExprAnnotation(expr.left);
-    const leftKnownBool = leftInfo &&
-      leftInfo.sound.kinds === BOOL_BIT;
+    const leftKnownBool = leftInfo && leftInfo.sound.kinds === BOOL_BIT;
 
     if (expr.operator.type === TokenType.AND) {
       if (leftKnownBool && leftInfo.sound.boolRef === BoolRef.False) {
@@ -666,7 +644,7 @@ export class SVMLCompiler
         maxStackSize: Math.max(
           testResult.maxStackSize,
           conseqResult.maxStackSize,
-          altResult.maxStackSize
+          altResult.maxStackSize,
         ),
       };
     } else if (expr.operator.type === TokenType.OR) {
@@ -694,7 +672,7 @@ export class SVMLCompiler
         maxStackSize: Math.max(
           testResult.maxStackSize,
           conseqResult.maxStackSize,
-          altResult.maxStackSize
+          altResult.maxStackSize,
         ),
       };
     }
@@ -746,11 +724,9 @@ export class SVMLCompiler
   visitCallExpr(expr: ExprNS.Call): ExpressionResult {
     // Instrumentation: record this call
     this.instrumentation.recordCall(expr);
-    
+
     if (!(expr.callee instanceof ExprNS.Variable)) {
-      throw new Error(
-        "Unsupported call expression: callee must be an identifier"
-      );
+      throw new Error("Unsupported call expression: callee must be an identifier");
     }
 
     const callee: ExprNS.Variable = expr.callee;
@@ -803,7 +779,7 @@ export class SVMLCompiler
       maxStackSize: Math.max(
         testResult.maxStackSize,
         conseqResult.maxStackSize,
-        altResult.maxStackSize
+        altResult.maxStackSize,
       ),
     };
   }
@@ -814,11 +790,7 @@ export class SVMLCompiler
   }
 
   visitLambdaExpr(expr: ExprNS.Lambda): ExpressionResult {
-    const ast: StmtNS.Stmt = new StmtNS.Return(
-      expr.startToken,
-      expr.endToken,
-      expr.body
-    );
+    const ast: StmtNS.Stmt = new StmtNS.Return(expr.startToken, expr.endToken, expr.body);
 
     // Compile lambda body in child environment
     const compiler = this.fromFunctionNode(expr);
@@ -832,12 +804,12 @@ export class SVMLCompiler
 
     // Instrumentation: enter lambda
     this.instrumentation.enterFunction(expr, compiler.builder.getFunctionIndex());
-    
+
     const { maxStackSize } = compiler.compile(ast);
-    
+
     // Instrumentation: exit lambda
     this.instrumentation.exitFunction();
-    
+
     // Add return if needed (functions should always return something)
     compiler.builder.emitNullary(OpCodes.RETG);
 
@@ -859,12 +831,12 @@ export class SVMLCompiler
 
     // Instrumentation: enter multi-lambda
     this.instrumentation.enterFunction(expr, compiler.builder.getFunctionIndex());
-    
+
     const { maxStackSize } = compiler.compileStatements(ast);
-    
+
     // Instrumentation: exit multi-lambda
     this.instrumentation.exitFunction();
-    
+
     // Add return if needed (functions should always return something)
     compiler.builder.emitNullary(OpCodes.RETG);
 
@@ -924,12 +896,9 @@ export class SVMLCompiler
 
     // Add return if needed (functions should always return something)
     childCompiler.builder.emitNullary(OpCodes.RETG);
-    
+
     // Add function creation instruction
-    this.builder.emitUnary(
-      OpCodes.NEWC,
-      childCompiler.builder.getFunctionIndex()
-    );
+    this.builder.emitUnary(OpCodes.NEWC, childCompiler.builder.getFunctionIndex());
 
     // Assign function as variable
     this.emitStoreSymbol(stmt.name);
@@ -968,7 +937,10 @@ export class SVMLCompiler
     this.builder.markLabel(elseLabel);
     const altResult = stmt.elseBlock
       ? this.compileStatements(stmt.elseBlock)
-      : (() => { this.builder.emitNullary(OpCodes.LGCU); return { maxStackSize: 1 }; })();
+      : (() => {
+          this.builder.emitNullary(OpCodes.LGCU);
+          return { maxStackSize: 1 };
+        })();
 
     this.builder.markLabel(endLabel);
 
@@ -976,7 +948,7 @@ export class SVMLCompiler
       maxStackSize: Math.max(
         testResult.maxStackSize,
         conseqResult.maxStackSize,
-        altResult.maxStackSize
+        altResult.maxStackSize,
       ),
     };
   }
@@ -985,18 +957,20 @@ export class SVMLCompiler
     const condInfo = this.getExprAnnotation(stmt.condition);
 
     // While False: loop never executes
-    if (condInfo && condInfo.sound.kinds === BOOL_BIT
-        && condInfo.sound.boolRef === BoolRef.False) {
+    if (condInfo && condInfo.sound.kinds === BOOL_BIT && condInfo.sound.boolRef === BoolRef.False) {
       this.builder.emitNullary(OpCodes.LGCU);
       return { maxStackSize: 1 };
     }
 
     // While True: skip condition evaluation each iteration
-    if (condInfo && condInfo.sound.kinds === BOOL_BIT
-        && condInfo.sound.boolRef === BoolRef.True) {
+    if (condInfo && condInfo.sound.kinds === BOOL_BIT && condInfo.sound.boolRef === BoolRef.True) {
       const loopLabel = this.builder.markLabel();
       const endLabel = this.builder.getNextLabel();
-      this.loopStack.push({ breakLabel: endLabel, continueLabel: loopLabel, iteratorOnStack: false });
+      this.loopStack.push({
+        breakLabel: endLabel,
+        continueLabel: loopLabel,
+        iteratorOnStack: false,
+      });
       const bodyResult = this.compileStatements(stmt.body);
       this.builder.emitNullary(OpCodes.POPG);
       this.builder.emitJump(OpCodes.BR, loopLabel);
@@ -1031,11 +1005,7 @@ export class SVMLCompiler
     this.builder.emitNullary(OpCodes.LGCU); // While loops return undefined
 
     return {
-      maxStackSize: Math.max(
-        testResult.maxStackSize,
-        bodyResult.maxStackSize,
-        1
-      ),
+      maxStackSize: Math.max(testResult.maxStackSize, bodyResult.maxStackSize, 1),
     };
   }
 

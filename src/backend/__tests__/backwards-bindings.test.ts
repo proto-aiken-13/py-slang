@@ -20,7 +20,10 @@ describe("BackwardsBindings", () => {
     b.register(n1, 1);
 
     const profile0: FunctionProfile = new Map([[0, stubValue]]);
-    const profile1: FunctionProfile = new Map([[0, stubValue], [1, stubValue]]);
+    const profile1: FunctionProfile = new Map([
+      [0, stubValue],
+      [1, stubValue],
+    ]);
     const obs: ReadonlyMap<number, FunctionProfile[]> = new Map([
       [0, [profile0]],
       [1, [profile1, profile1]],
@@ -51,9 +54,7 @@ describe("BackwardsBindings", () => {
     const b = new BackwardsBindings<number>();
     const n = makeNode("dup");
     b.register(n, 7);
-    expect(() => b.register(makeNode("other"), 7)).toThrow(
-      /duplicate registration/i,
-    );
+    expect(() => b.register(makeNode("other"), 7)).toThrow(/duplicate registration/i);
   });
 
   it("returns an empty map when observations are empty", () => {
@@ -65,9 +66,7 @@ describe("BackwardsBindings", () => {
 
   it("returns an empty map when all observation IDs are unregistered", () => {
     const b = new BackwardsBindings<number>();
-    const obs: ReadonlyMap<number, FunctionProfile[]> = new Map([
-      [5, [new Map()]],
-    ]);
+    const obs: ReadonlyMap<number, FunctionProfile[]> = new Map([[5, [new Map()]]]);
     const result = b.resolve(obs);
     expect(result.size).toBe(0);
   });

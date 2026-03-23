@@ -10,21 +10,21 @@ export const ALL_KINDS_MASK = INT_BIT | BOOL_BIT | STR_BIT | NULL_BIT | CLOSURE_
 
 // Power-set bitmask: join = OR, meet = AND
 export const enum IntRef {
-  Bottom  = 0,
-  Neg     = 1,
-  Zero    = 2,
-  Pos     = 4,
-  NonPos  = Neg | Zero,    // 3
-  NonZero = Neg | Pos,     // 5
-  NonNeg  = Zero | Pos,    // 6
-  Top     = Neg | Zero | Pos, // 7
+  Bottom = 0,
+  Neg = 1,
+  Zero = 2,
+  Pos = 4,
+  NonPos = Neg | Zero, // 3
+  NonZero = Neg | Pos, // 5
+  NonNeg = Zero | Pos, // 6
+  Top = Neg | Zero | Pos, // 7
 }
 
 export const enum BoolRef {
   Bottom = 0,
-  True   = 1,
-  False  = 2,
-  Top    = True | False,   // 3
+  True = 1,
+  False = 2,
+  Top = True | False, // 3
 }
 
 export interface SoundType {

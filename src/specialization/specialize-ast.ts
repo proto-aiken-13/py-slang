@@ -15,12 +15,7 @@ import {
   closureValue,
   boolean as booleanValue,
 } from "../types/lattice-ops";
-import {
-  transferBinaryOp,
-  transferCompare,
-  transferUnaryNeg,
-  transferNot,
-} from "./transfer";
+import { transferBinaryOp, transferCompare, transferUnaryNeg, transferNot } from "./transfer";
 import type { AnalysisResult, SlotLookup } from "./types";
 
 // Re-export for backward compatibility
@@ -102,14 +97,29 @@ class ASTSpecializationVisitor {
 
   private visitStmt(stmt: StmtNS.Stmt): void {
     switch (stmt.kind) {
-      case "Assign": this.visitAssign(stmt as StmtNS.Assign); break;
-      case "Return": this.visitReturn(stmt as StmtNS.Return); break;
-      case "If": this.visitIf(stmt as StmtNS.If); break;
-      case "While": this.visitWhile(stmt as StmtNS.While); break;
-      case "For": this.visitFor(stmt as StmtNS.For); break;
-      case "FunctionDef": break; // Don't descend — gets own specialization
-      case "SimpleExpr": this.visitExpr((stmt as StmtNS.SimpleExpr).expression); break;
-      case "FileInput": this.visitStatements((stmt as StmtNS.FileInput).statements); break;
+      case "Assign":
+        this.visitAssign(stmt as StmtNS.Assign);
+        break;
+      case "Return":
+        this.visitReturn(stmt as StmtNS.Return);
+        break;
+      case "If":
+        this.visitIf(stmt as StmtNS.If);
+        break;
+      case "While":
+        this.visitWhile(stmt as StmtNS.While);
+        break;
+      case "For":
+        this.visitFor(stmt as StmtNS.For);
+        break;
+      case "FunctionDef":
+        break; // Don't descend — gets own specialization
+      case "SimpleExpr":
+        this.visitExpr((stmt as StmtNS.SimpleExpr).expression);
+        break;
+      case "FileInput":
+        this.visitStatements((stmt as StmtNS.FileInput).statements);
+        break;
       // Pass, Global, NonLocal, Break, Continue — no type effects
     }
   }
@@ -145,7 +155,8 @@ class ASTSpecializationVisitor {
     const len = Math.max(trueSlots.length, falseSlots.length);
     const joined = new Array<AbstractValue | undefined>(len);
     for (let i = 0; i < len; i++) {
-      const t = trueSlots[i], f = falseSlots[i];
+      const t = trueSlots[i],
+        f = falseSlots[i];
       if (t !== undefined && f !== undefined) {
         joined[i] = join(t, f);
       } else {
@@ -176,19 +187,31 @@ class ASTSpecializationVisitor {
 
   visitExpr(expr: ExprNS.Expr): AbstractValue {
     switch (expr.kind) {
-      case "Literal": return this.visitLiteral(expr as ExprNS.Literal);
-      case "BigIntLiteral": return this.visitBigIntLiteral(expr as ExprNS.BigIntLiteral);
-      case "Variable": return this.visitVariable(expr as ExprNS.Variable);
-      case "Binary": return this.visitBinary(expr as ExprNS.Binary);
-      case "Compare": return this.visitCompare(expr as ExprNS.Compare);
-      case "Unary": return this.visitUnary(expr as ExprNS.Unary);
-      case "BoolOp": return this.visitBoolOp(expr as ExprNS.BoolOp);
-      case "Ternary": return this.visitTernary(expr as ExprNS.Ternary);
-      case "Call": return this.visitCall(expr as ExprNS.Call);
-      case "Grouping": return this.visitExpr((expr as ExprNS.Grouping).expression);
+      case "Literal":
+        return this.visitLiteral(expr as ExprNS.Literal);
+      case "BigIntLiteral":
+        return this.visitBigIntLiteral(expr as ExprNS.BigIntLiteral);
+      case "Variable":
+        return this.visitVariable(expr as ExprNS.Variable);
+      case "Binary":
+        return this.visitBinary(expr as ExprNS.Binary);
+      case "Compare":
+        return this.visitCompare(expr as ExprNS.Compare);
+      case "Unary":
+        return this.visitUnary(expr as ExprNS.Unary);
+      case "BoolOp":
+        return this.visitBoolOp(expr as ExprNS.BoolOp);
+      case "Ternary":
+        return this.visitTernary(expr as ExprNS.Ternary);
+      case "Call":
+        return this.visitCall(expr as ExprNS.Call);
+      case "Grouping":
+        return this.visitExpr((expr as ExprNS.Grouping).expression);
       case "Lambda":
-      case "MultiLambda": return this.annotate(expr, closureValue());
-      case "None": return this.annotate(expr, nullValue());
+      case "MultiLambda":
+        return this.annotate(expr, closureValue());
+      case "None":
+        return this.annotate(expr, nullValue());
       case "List": {
         for (const el of (expr as ExprNS.List).elements) this.visitExpr(el);
         return this.annotate(expr, TOP);
@@ -199,7 +222,8 @@ class ASTSpecializationVisitor {
         this.visitExpr(sub.index);
         return this.annotate(expr, TOP);
       }
-      default: return TOP;
+      default:
+        return TOP;
     }
   }
 

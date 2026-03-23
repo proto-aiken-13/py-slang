@@ -1,7 +1,10 @@
 // src/specialization/transfer.ts
 import {
-  type IntRef, type BoolRef, type AbstractValue,
-  INT_BIT, BOOL_BIT,
+  type IntRef,
+  type BoolRef,
+  type AbstractValue,
+  INT_BIT,
+  BOOL_BIT,
 } from "../types/abstract-value";
 import { TOP, integer, boolean } from "../types/lattice-ops";
 
@@ -103,7 +106,7 @@ export function modSigns(a: IntRef, b: IntRef): IntRef {
 export function notBoolRef(t: BoolRef): BoolRef {
   if (t === 0) return 0 as BoolRef; // bottom
   // Swap True (bit 0) and False (bit 1) — same bit-swap as negSign
-  return ((t & 1) << 1 | (t & 2) >> 1) as BoolRef;
+  return (((t & 1) << 1) | ((t & 2) >> 1)) as BoolRef;
 }
 
 /** BoolRef of (l > r) based on signs. */
@@ -124,9 +127,15 @@ export function gtSigns(l: IntRef, r: IntRef): BoolRef {
   return 3 as BoolRef; // top
 }
 
-export function ltSigns(l: IntRef, r: IntRef): BoolRef { return gtSigns(r, l); }
-export function geSigns(l: IntRef, r: IntRef): BoolRef { return notBoolRef(ltSigns(l, r)); }
-export function leSigns(l: IntRef, r: IntRef): BoolRef { return notBoolRef(gtSigns(l, r)); }
+export function ltSigns(l: IntRef, r: IntRef): BoolRef {
+  return gtSigns(r, l);
+}
+export function geSigns(l: IntRef, r: IntRef): BoolRef {
+  return notBoolRef(ltSigns(l, r));
+}
+export function leSigns(l: IntRef, r: IntRef): BoolRef {
+  return notBoolRef(gtSigns(l, r));
+}
 
 /** BoolRef of (l === r) based on signs. */
 export function eqSigns(l: IntRef, r: IntRef): BoolRef {
@@ -143,13 +152,19 @@ export function eqSigns(l: IntRef, r: IntRef): BoolRef {
   return 3 as BoolRef;
 }
 
-export function neqSigns(l: IntRef, r: IntRef): BoolRef { return notBoolRef(eqSigns(l, r)); }
+export function neqSigns(l: IntRef, r: IntRef): BoolRef {
+  return notBoolRef(eqSigns(l, r));
+}
 
 // ========================================================================
 // Top-level transfer functions operating on AbstractValue
 // ========================================================================
 
-export function transferBinaryOp(op: string, left: AbstractValue, right: AbstractValue): AbstractValue {
+export function transferBinaryOp(
+  op: string,
+  left: AbstractValue,
+  right: AbstractValue,
+): AbstractValue {
   const lOnlyInt = left.sound.kinds === INT_BIT;
   const rOnlyInt = right.sound.kinds === INT_BIT;
   if (!lOnlyInt || !rOnlyInt) return TOP;
@@ -159,19 +174,36 @@ export function transferBinaryOp(op: string, left: AbstractValue, right: Abstrac
 
   let resultRef: IntRef;
   switch (op) {
-    case "+":  resultRef = addSigns(lRef, rRef); break;
-    case "-":  resultRef = subSigns(lRef, rRef); break;
-    case "*":  resultRef = mulSigns(lRef, rRef); break;
-    case "/":  resultRef = divSigns(lRef, rRef); break;
-    case "//": resultRef = divSigns(lRef, rRef); break;
-    case "%":  resultRef = modSigns(lRef, rRef); break;
-    default:   return TOP;
+    case "+":
+      resultRef = addSigns(lRef, rRef);
+      break;
+    case "-":
+      resultRef = subSigns(lRef, rRef);
+      break;
+    case "*":
+      resultRef = mulSigns(lRef, rRef);
+      break;
+    case "/":
+      resultRef = divSigns(lRef, rRef);
+      break;
+    case "//":
+      resultRef = divSigns(lRef, rRef);
+      break;
+    case "%":
+      resultRef = modSigns(lRef, rRef);
+      break;
+    default:
+      return TOP;
   }
 
   return integer(resultRef);
 }
 
-export function transferCompare(op: string, left: AbstractValue, right: AbstractValue): AbstractValue {
+export function transferCompare(
+  op: string,
+  left: AbstractValue,
+  right: AbstractValue,
+): AbstractValue {
   const lOnlyInt = left.sound.kinds === INT_BIT;
   const rOnlyInt = right.sound.kinds === INT_BIT;
   if (!lOnlyInt || !rOnlyInt) return boolean(3 as BoolRef);
@@ -181,13 +213,26 @@ export function transferCompare(op: string, left: AbstractValue, right: Abstract
 
   let resultRef: BoolRef;
   switch (op) {
-    case ">":  resultRef = gtSigns(lRef, rRef); break;
-    case "<":  resultRef = ltSigns(lRef, rRef); break;
-    case ">=": resultRef = geSigns(lRef, rRef); break;
-    case "<=": resultRef = leSigns(lRef, rRef); break;
-    case "==": resultRef = eqSigns(lRef, rRef); break;
-    case "!=": resultRef = neqSigns(lRef, rRef); break;
-    default:   return boolean(3 as BoolRef);
+    case ">":
+      resultRef = gtSigns(lRef, rRef);
+      break;
+    case "<":
+      resultRef = ltSigns(lRef, rRef);
+      break;
+    case ">=":
+      resultRef = geSigns(lRef, rRef);
+      break;
+    case "<=":
+      resultRef = leSigns(lRef, rRef);
+      break;
+    case "==":
+      resultRef = eqSigns(lRef, rRef);
+      break;
+    case "!=":
+      resultRef = neqSigns(lRef, rRef);
+      break;
+    default:
+      return boolean(3 as BoolRef);
   }
 
   return boolean(resultRef);

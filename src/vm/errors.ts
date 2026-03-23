@@ -7,7 +7,6 @@ export class SVMLCompilerError extends Error {
   }
 }
 
-
 export class SVMLInterpreterError extends Error {
   constructor(message: string) {
     super(message);
@@ -17,7 +16,7 @@ export class SVMLInterpreterError extends Error {
 
 export class UnsupportedOperandTypeError extends SVMLInterpreterError {
   constructor(operand: string, ...wrongTypes: SVMLType[]) {
-    const msg = `TypeError: unsupported operand type(s) for ${operand}: ${wrongTypes.map(t => `'${t}'`).join(' and ')}`;
+    const msg = `TypeError: unsupported operand type(s) for ${operand}: ${wrongTypes.map(t => `'${t}'`).join(" and ")}`;
     super(msg);
   }
 }

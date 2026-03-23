@@ -1,10 +1,15 @@
 import { StmtNS, ExprNS } from "../ast-types";
 
 // Re-export the product lattice types
-export type {
-  SoundType, AbstractValue, TypeEnv,
+export type { SoundType, AbstractValue, TypeEnv } from "../types/abstract-value";
+export {
+  INT_BIT,
+  BOOL_BIT,
+  STR_BIT,
+  NULL_BIT,
+  CLOSURE_BIT,
+  ALL_KINDS_MASK,
 } from "../types/abstract-value";
-export { INT_BIT, BOOL_BIT, STR_BIT, NULL_BIT, CLOSURE_BIT, ALL_KINDS_MASK } from "../types/abstract-value";
 export { IntRef, BoolRef } from "../types/abstract-value";
 
 export interface AnalysisResult {
@@ -25,8 +30,7 @@ export type SlotLookup = (token: import("../tokenizer").Token) => SlotInfo;
  * A function node that the specializer can profile and annotate.
  * Single source of truth — re-exported through index.ts.
  */
-export type SpecializableFunctionNode =
-  | StmtNS.FunctionDef | ExprNS.Lambda | ExprNS.MultiLambda;
+export type SpecializableFunctionNode = StmtNS.FunctionDef | ExprNS.Lambda | ExprNS.MultiLambda;
 
 /**
  * Type profile observed for one call-site signature of a function.

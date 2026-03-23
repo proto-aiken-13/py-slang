@@ -11,7 +11,14 @@ import {
   isSVMLObject,
 } from "./types";
 import type { AbstractValue } from "../types/abstract-value";
-import { positiveInteger, negativeInteger, zeroInteger, trueValue, falseValue, stringValue } from "../types/lattice-ops";
+import {
+  positiveInteger,
+  negativeInteger,
+  zeroInteger,
+  trueValue,
+  falseValue,
+  stringValue,
+} from "../types/lattice-ops";
 import { specializeAST } from "../specialization/specialize-ast";
 import OpCodes from "./opcodes";
 import { InstrumentationTracker } from "./instrumentation";
@@ -23,16 +30,16 @@ import type { SVMLCompiler } from "./svml-compiler";
 
 const enum SigTag {
   Unknown = 0,
-  Pos     = 1,
-  Neg     = 2,
-  Zero    = 3,
-  BTrue   = 4,
-  BFalse  = 5,
-  Str     = 6,
+  Pos = 1,
+  Neg = 2,
+  Zero = 3,
+  BTrue = 4,
+  BFalse = 5,
+  Str = 6,
 }
 
 declare const __DEBUG__: boolean;
-const debug : (msg: string) => void = (msg) => console.log(msg);
+const debug: (msg: string) => void = msg => console.log(msg);
 const lambdaReturnCache = new WeakMap<ExprNS.Lambda, StmtNS.Stmt[]>();
 
 /**
@@ -97,7 +104,7 @@ export class SVMLInterpreter {
       maxStackSize?: number;
       maxCallDepth?: number;
       maxInstructions?: number;
-    }
+    },
   ) {
     this.program = program;
     this.currentFrame = null;
@@ -110,12 +117,15 @@ export class SVMLInterpreter {
     if (options) {
       if (options.maxStackSize) this.maxStackSize = options.maxStackSize;
       if (options.maxCallDepth) this.maxCallDepth = options.maxCallDepth;
-      if (options.maxInstructions)
-        this.maxInstructionLimit = options.maxInstructions;
+      if (options.maxInstructions) this.maxInstructionLimit = options.maxInstructions;
     }
   }
 
-  reset(program: SVMLProgram, instrumentation?: InstrumentationTracker, _compiler?: SVMLCompiler): void {
+  reset(
+    program: SVMLProgram,
+    instrumentation?: InstrumentationTracker,
+    _compiler?: SVMLCompiler,
+  ): void {
     const programChanged = program !== this.program;
     this.program = program;
     this.instrumentation = instrumentation || null;
@@ -139,9 +149,7 @@ export class SVMLInterpreter {
     const entryFunction = this.program.functions[entryPointIndex];
 
     if (!entryFunction) {
-      throw new Error(
-        `Entry point function at index ${entryPointIndex} not found`
-      );
+      throw new Error(`Entry point function at index ${entryPointIndex} not found`);
     }
 
     // Create closure for entry point
@@ -186,9 +194,7 @@ export class SVMLInterpreter {
     while (!this.halted && this.currentFrame) {
       // Safety check
       if (this.instructionCount >= this.maxInstructionLimit) {
-        throw new Error(
-          `Exceeded maximum instruction limit (${this.maxInstructionLimit})`
-        );
+        throw new Error(`Exceeded maximum instruction limit (${this.maxInstructionLimit})`);
       }
       this.instructionCount++;
 
@@ -196,9 +202,7 @@ export class SVMLInterpreter {
       const ir = frame.ir;
 
       if (frame.pc >= ir.count) {
-        throw new Error(
-          `PC ${frame.pc} out of bounds for function ${frame.closure.functionIndex}`
-        );
+        throw new Error(`PC ${frame.pc} out of bounds for function ${frame.closure.functionIndex}`);
       }
 
       const pc = frame.pc;
@@ -208,7 +212,10 @@ export class SVMLInterpreter {
       const a1 = ir.arg1s[pc];
       const a2 = ir.arg2s[pc];
 
-      if (__DEBUG__) debug(`PC=${pc} | ${OpCodes[op] || `UNKNOWN(${op})`} ${a1} ${a2} | Stack: [${frame.stack.map((v) => JSON.stringify(SVMLInterpreter.toJSValue(v))).join(", ")}]`);
+      if (__DEBUG__)
+        debug(
+          `PC=${pc} | ${OpCodes[op] || `UNKNOWN(${op})`} ${a1} ${a2} | Stack: [${frame.stack.map(v => JSON.stringify(SVMLInterpreter.toJSValue(v))).join(", ")}]`,
+        );
 
       switch (op) {
         // Load constant instructions
@@ -268,10 +275,7 @@ export class SVMLInterpreter {
 
           if (leftType === SVMLType.NUMBER && rightType === SVMLType.NUMBER) {
             this.push((left as number) + (right as number));
-          } else if (
-            leftType === SVMLType.STRING &&
-            rightType === SVMLType.STRING
-          ) {
+          } else if (leftType === SVMLType.STRING && rightType === SVMLType.STRING) {
             this.push((left as string) + (right as string));
           } else {
             throw new UnsupportedOperandTypeError("+", leftType, rightType);
@@ -373,7 +377,7 @@ export class SVMLInterpreter {
             const a = left as number;
             const b = right as number;
             if (b === 0) throw new ZeroDivisionError("integer modulo by zero");
-            this.push(pythonMod(a, b));
+            this.push(pythonMod(a, b) as number);
           } else {
             throw new UnsupportedOperandTypeError("%", leftType, rightType);
           }
@@ -383,7 +387,7 @@ export class SVMLInterpreter {
           const right = this.pop() as number;
           const left = this.pop() as number;
           if (right === 0) throw new ZeroDivisionError("integer modulo by zero");
-          this.push(pythonMod(left, right));
+          this.push(pythonMod(left, right) as number);
           break;
         }
         // Unary operations
@@ -576,15 +580,15 @@ export class SVMLInterpreter {
           let nextValue: SVMLBoxType = undefined;
 
           if (iter.kind === "range") {
-            const going = iter.step! > 0 ? iter.current! < iter.stop!
-                                         : iter.current! > iter.stop!;
+            const going = iter.step! > 0 ? iter.current! < iter.stop! : iter.current! > iter.stop!;
             if (going) {
               nextValue = iter.current!;
               iter.current! += iter.step!;
             } else {
               done = true;
             }
-          } else { // "list"
+          } else {
+            // "list"
             if (iter.index! < iter.array!.elements.length) {
               nextValue = iter.array!.elements[iter.index!++];
             } else {
@@ -615,9 +619,7 @@ export class SVMLInterpreter {
           break;
 
         default:
-          throw new Error(
-            `Unimplemented opcode: ${op} (${OpCodes[op] || "UNKNOWN"})`
-          );
+          throw new Error(`Unimplemented opcode: ${op} (${OpCodes[op] || "UNKNOWN"})`);
       }
     }
 
@@ -646,7 +648,8 @@ export class SVMLInterpreter {
       throw new Error("No current frame for pop");
     }
     if (this.currentFrame.stack.length === 0) {
-      if (__DEBUG__) debug(`STACK UNDERFLOW! Current frame: ${this.currentFrame.closure.functionIndex}`);
+      if (__DEBUG__)
+        debug(`STACK UNDERFLOW! Current frame: ${this.currentFrame.closure.functionIndex}`);
       throw new Error("Stack underflow");
     }
     const value = this.currentFrame.stack.pop()!;
@@ -747,7 +750,8 @@ export class SVMLInterpreter {
       throw new Error("No current frame");
     }
     const value = this.pop();
-    if (__DEBUG__) debug(`[STLG] Storing to slot ${slot}: ${JSON.stringify(SVMLInterpreter.toJSValue(value))}`);
+    if (__DEBUG__)
+      debug(`[STLG] Storing to slot ${slot}: ${JSON.stringify(SVMLInterpreter.toJSValue(value))}`);
     this.currentFrame.env.set(slot, value);
   }
 
@@ -761,7 +765,8 @@ export class SVMLInterpreter {
     const parentEnv = this.currentFrame.env.getParent(level);
     if (__DEBUG__) debug(`[LDPG] Parent env has ${parentEnv.getSize()} slots`);
     const value = parentEnv.get(slot);
-    if (__DEBUG__) debug(`[LDPG] Loaded value: ${JSON.stringify(SVMLInterpreter.toJSValue(value))}`);
+    if (__DEBUG__)
+      debug(`[LDPG] Loaded value: ${JSON.stringify(SVMLInterpreter.toJSValue(value))}`);
     this.push(value);
   }
 
@@ -864,7 +869,12 @@ export class SVMLInterpreter {
     return hasKnown ? key : -1;
   }
 
-  private getSpecializedIR(funcDef: SVMLIR, functionIndex: number, args: SVMLBoxType[], closure: SVMLClosure): SVMLIR {
+  private getSpecializedIR(
+    funcDef: SVMLIR,
+    functionIndex: number,
+    args: SVMLBoxType[],
+    closure: SVMLClosure,
+  ): SVMLIR {
     const sigKey = this.computeSigKey(args);
     if (sigKey === -1) return funcDef;
 
@@ -961,7 +971,10 @@ export class SVMLInterpreter {
       throw new Error(`Maximum call depth exceeded (${this.maxCallDepth})`);
     }
 
-    if (__DEBUG__) debug(`[CALL] numArgs=${numArgs}, stackSize=${this.currentFrame.stack}, isTail=${isTailCall}`);
+    if (__DEBUG__)
+      debug(
+        `[CALL] numArgs=${numArgs}, stackSize=${this.currentFrame.stack}, isTail=${isTailCall}`,
+      );
 
     // According to SVML spec: Pop N arguments from stack, then pop function
     // Stack should be: [... func arg1 arg2 ... argN] with argN on top
@@ -969,14 +982,13 @@ export class SVMLInterpreter {
     const args = new Array<SVMLBoxType>(numArgs);
     for (let i = numArgs - 1; i >= 0; i--) {
       if (this.currentFrame?.stack.length === 0) {
-        throw new Error(
-          `Stack underflow while popping argument ${i}/${numArgs}. Stack was empty.`
-        );
+        throw new Error(`Stack underflow while popping argument ${i}/${numArgs}. Stack was empty.`);
       }
       args[i] = this.pop();
     }
 
-    if (__DEBUG__) debug(`[CALL] Popped ${numArgs} args, stack now has ${this.currentFrame.stack.length} items`);
+    if (__DEBUG__)
+      debug(`[CALL] Popped ${numArgs} args, stack now has ${this.currentFrame.stack.length} items`);
 
     // Pop the function
     if (this.currentFrame?.stack.length === 0) {
@@ -984,15 +996,18 @@ export class SVMLInterpreter {
         `Stack underflow while popping function. ` +
           `After popping ${numArgs} arguments, stack is empty. ` +
           `This means the function was never pushed onto the stack. ` +
-          `Check that LDLG/LDPG is being emitted before arguments.`
+          `Check that LDLG/LDPG is being emitted before arguments.`,
       );
     }
 
     const func = this.pop();
-    if (__DEBUG__) debug(`[CALL] Popped function: ${JSON.stringify(SVMLInterpreter.toJSValue(func))}`);
+    if (__DEBUG__)
+      debug(`[CALL] Popped function: ${JSON.stringify(SVMLInterpreter.toJSValue(func))}`);
 
     if (!isSVMLObject(func) || func.type !== "closure") {
-      throw new Error(`Cannot call non-closure value: ${JSON.stringify(SVMLInterpreter.toJSValue(func))}`);
+      throw new Error(
+        `Cannot call non-closure value: ${JSON.stringify(SVMLInterpreter.toJSValue(func))}`,
+      );
     }
 
     const closure = func;
@@ -1011,9 +1026,7 @@ export class SVMLInterpreter {
     const funcDef = this.program.functions[closure.functionIndex];
 
     if (numArgs !== funcDef.numArgs) {
-      throw new Error(
-        `Function expects ${funcDef.numArgs} arguments but got ${numArgs}`
-      );
+      throw new Error(`Function expects ${funcDef.numArgs} arguments but got ${numArgs}`);
     }
 
     const specializedIR = this.getSpecializedIR(funcDef, closure.functionIndex, args, closure);
@@ -1024,10 +1037,14 @@ export class SVMLInterpreter {
     // Store arguments in the new environment (first N slots)
     for (let i = 0; i < numArgs; i++) {
       newEnv.set(i, args[i]);
-      if (__DEBUG__) debug(`[CALL] Set env slot ${i} = ${JSON.stringify(SVMLInterpreter.toJSValue(args[i]))}`);
+      if (__DEBUG__)
+        debug(`[CALL] Set env slot ${i} = ${JSON.stringify(SVMLInterpreter.toJSValue(args[i]))}`);
     }
 
-    if (__DEBUG__) debug(`[CALL] Created new env with ${funcDef.envSize} slots, parent exists: ${closure.parentEnv !== null}`);
+    if (__DEBUG__)
+      debug(
+        `[CALL] Created new env with ${funcDef.envSize} slots, parent exists: ${closure.parentEnv !== null}`,
+      );
 
     if (isTailCall) {
       // Tail call optimization: reuse current frame
@@ -1061,11 +1078,7 @@ export class SVMLInterpreter {
     }
   }
 
-  private callPrimitive(
-    primitiveIndex: number,
-    numArgs: number,
-    _isTailCall: boolean
-  ): void {
+  private callPrimitive(primitiveIndex: number, numArgs: number, _isTailCall: boolean): void {
     if (__DEBUG__) debug(`[CALLP] primitiveIndex=${primitiveIndex}, numArgs=${numArgs}`);
 
     // According to SVML spec: call.p pops N arguments (NO function object)
@@ -1073,24 +1086,22 @@ export class SVMLInterpreter {
     const args = new Array<SVMLBoxType>(numArgs);
     for (let i = numArgs - 1; i >= 0; i--) {
       if (this.currentFrame?.stack.length === 0) {
-        throw new Error(
-          `Stack underflow in primitive call while popping argument ${i}/${numArgs}`
-        );
+        throw new Error(`Stack underflow in primitive call while popping argument ${i}/${numArgs}`);
       }
       args[i] = this.pop();
     }
 
-    if (__DEBUG__) debug(`[CALLP] Calling primitive ${primitiveIndex} with args: ${JSON.stringify(args.map((a) => SVMLInterpreter.toJSValue(a)))}`);
+    if (__DEBUG__)
+      debug(
+        `[CALLP] Calling primitive ${primitiveIndex} with args: ${JSON.stringify(args.map(a => SVMLInterpreter.toJSValue(a)))}`,
+      );
 
     // Execute primitive function
-    const result = executePrimitive(
-      primitiveIndex,
-      args,
-      this.boundSendToStdout
-    );
+    const result = executePrimitive(primitiveIndex, args, this.boundSendToStdout);
     this.push(result);
 
-    if (__DEBUG__) debug(`[CALLP] Primitive returned: ${JSON.stringify(SVMLInterpreter.toJSValue(result))}`);
+    if (__DEBUG__)
+      debug(`[CALLP] Primitive returned: ${JSON.stringify(SVMLInterpreter.toJSValue(result))}`);
   }
 
   private return(): void {
@@ -1101,7 +1112,8 @@ export class SVMLInterpreter {
     // Pop return value from CURRENT (callee's) stack
     const returnValue = this.pop();
 
-    if (__DEBUG__) debug(`[RETG] Returning value: ${JSON.stringify(SVMLInterpreter.toJSValue(returnValue))}`);
+    if (__DEBUG__)
+      debug(`[RETG] Returning value: ${JSON.stringify(SVMLInterpreter.toJSValue(returnValue))}`);
 
     // Handle memoization
     const memoArgs = this.currentFrame.memoArgs;
@@ -1128,7 +1140,10 @@ export class SVMLInterpreter {
     // Push return value onto CALLER's stack
     this.push(returnValue);
 
-    if (__DEBUG__) debug(`[RETG] Pushed return value to caller's stack, size now: ${this.currentFrame.stack.length}`);
+    if (__DEBUG__)
+      debug(
+        `[RETG] Pushed return value to caller's stack, size now: ${this.currentFrame.stack.length}`,
+      );
   }
 
   // ========================================================================
@@ -1153,9 +1168,7 @@ export class SVMLInterpreter {
     }
 
     if (index < 0 || index >= arr.elements.length) {
-      throw new Error(
-        `Array index ${index} out of bounds (length: ${arr.elements.length})`
-      );
+      throw new Error(`Array index ${index} out of bounds (length: ${arr.elements.length})`);
     }
 
     this.push(arr.elements[index]);
@@ -1171,9 +1184,7 @@ export class SVMLInterpreter {
     }
 
     if (index < 0 || index >= arr.elements.length) {
-      throw new Error(
-        `Array index ${index} out of bounds (length: ${arr.elements.length})`
-      );
+      throw new Error(`Array index ${index} out of bounds (length: ${arr.elements.length})`);
     }
 
     arr.elements[index] = value;
@@ -1203,7 +1214,8 @@ export class SVMLInterpreter {
    */
   static toJSValue(value: SVMLBoxType): unknown {
     if (value === null || value === undefined) return value;
-    if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "string")
+      return value;
     if (isSVMLObject(value)) {
       if (value.type === "closure") return `<closure:${value.functionIndex}>`;
       if (value.type === "array") return value.elements.map(e => SVMLInterpreter.toJSValue(e));

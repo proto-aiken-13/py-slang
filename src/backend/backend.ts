@@ -4,10 +4,7 @@ import type { ComputationalResult } from "../types/result";
 import type { TypeInformation } from "../specialization/types";
 
 export interface Backend {
-  run(
-    ast: StmtNS.FileInput,
-    environments: FunctionEnvironments,
-  ): Promise<ComputationalResult>;
+  run(ast: StmtNS.FileInput, environments: FunctionEnvironments): Promise<ComputationalResult>;
 
   /**
    * Returns type profiles observed during the most recent run(), or undefined

@@ -1,6 +1,15 @@
 import { SVMLAdapter } from "../vm/svml-adapter";
 import type { SVMLArray, SVMLClosure } from "../vm/types";
-import { INT_BIT, BOOL_BIT, STR_BIT, NULL_BIT, CLOSURE_BIT, ALL_KINDS_MASK, IntRef, BoolRef } from "../types/abstract-value";
+import {
+  INT_BIT,
+  BOOL_BIT,
+  STR_BIT,
+  NULL_BIT,
+  CLOSURE_BIT,
+  ALL_KINDS_MASK,
+  IntRef,
+  BoolRef,
+} from "../types/abstract-value";
 
 describe("SVMLAdapter", () => {
   let adapter: SVMLAdapter;

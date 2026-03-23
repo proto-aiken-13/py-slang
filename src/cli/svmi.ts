@@ -14,7 +14,7 @@ import { analyze } from "../resolver";
 function parsePythonToAst(
   code: string,
   variant: number = 1,
-  doValidate: boolean = false
+  doValidate: boolean = false,
 ): SVMLProgram {
   const script = code + "\n";
   const ast = parse(script);
@@ -49,10 +49,7 @@ function interpretSVMProgram(program: SVMLProgram) {
 function main() {
   const program = new Command();
 
-  program
-    .name("svmi")
-    .description("SVML Interpreter - Run SVM program")
-    .version("1.0.0");
+  program.name("svmi").description("SVML Interpreter - Run SVM program").version("1.0.0");
 
   program
     .command("interpret")

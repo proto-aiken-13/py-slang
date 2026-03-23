@@ -21,7 +21,7 @@ export default class PyEvaluator extends BasicEvaluator {
     try {
       if (chunk !== this.lastSource) {
         const script = chunk + "\n";
-        this.lastAST = parse(script) as StmtNS.FileInput;
+        this.lastAST = parse(script);
         analyze(this.lastAST, script, 4);
         this.lastSource = chunk;
       }
@@ -40,9 +40,7 @@ export default class PyEvaluator extends BasicEvaluator {
         this.conductor.sendOutput(`Error: ${result.error.message}`);
       }
     } catch (error) {
-      this.conductor.sendOutput(
-        `Error: ${error instanceof Error ? error.message : error}`
-      );
+      this.conductor.sendOutput(`Error: ${error instanceof Error ? error.message : error}`);
     }
   }
 }

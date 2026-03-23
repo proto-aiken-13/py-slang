@@ -48,16 +48,12 @@ export class SVMLIRBuilder {
   }
 
   getAllBuilders(toSort: boolean = false): SVMLIRBuilder[] {
-    const res = [
-      this,
-      ...this.children.flatMap((child) => child.getAllBuilders()),
-    ];
+    const res = [this, ...this.children.flatMap(child => child.getAllBuilders())];
     if (!toSort) {
       return res;
     }
     return res.sort((a, b) => a.getFunctionIndex() - b.getFunctionIndex());
   }
-
 
   emitNullary(opcode: number): void {
     this.ops.push(opcode);
@@ -111,11 +107,7 @@ export class SVMLIRBuilder {
     return labelId;
   }
 
-  emitPrimitiveCall(
-    opcode: number,
-    primitiveIndex: number,
-    numArgs: number
-  ): void {
+  emitPrimitiveCall(opcode: number, primitiveIndex: number, numArgs: number): void {
     this.ops.push(opcode);
     this.a1s.push(primitiveIndex);
     this.a2s.push(numArgs);
@@ -178,7 +170,11 @@ export class SVMLIRBuilder {
     // Remap NEWC function indices when assembling into a new program
     if (indexMap) {
       for (let i = 0; i < n; i++) {
-        if (opcodes[i] === OpCodes.NEWC || opcodes[i] === OpCodes.NEWCP || opcodes[i] === OpCodes.NEWCV) {
+        if (
+          opcodes[i] === OpCodes.NEWC ||
+          opcodes[i] === OpCodes.NEWCP ||
+          opcodes[i] === OpCodes.NEWCV
+        ) {
           const oldIndex = arg1s[i];
           arg1s[i] = indexMap.get(oldIndex) ?? oldIndex;
         }

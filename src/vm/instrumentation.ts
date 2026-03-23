@@ -2,7 +2,7 @@ import { StmtNS, ExprNS } from "../ast-types";
 
 /**
  * AST-level instrumentation for analyzing and optimizing compiled functions
- * 
+ *
  * This works during compilation by tracking the visitor pattern, giving us
  * rich semantic information about function definitions and calls.
  */
@@ -26,13 +26,13 @@ export interface FunctionInfo {
 export class InstrumentationTracker {
   // Stack of currently compiling functions
   private functionStack: FunctionInfo[] = [];
-  
+
   // Map of all functions seen: name -> FunctionInfo
   private functions = new Map<string, FunctionInfo>();
-  
+
   // Map of function index -> FunctionInfo
   private functionsByIndex = new Map<number, FunctionInfo>();
-  
+
   // Configuration
   private config: InstrumentationConfig;
 
@@ -45,7 +45,7 @@ export class InstrumentationTracker {
    */
   enterFunction(
     node: StmtNS.FunctionDef | ExprNS.Lambda | ExprNS.MultiLambda,
-    functionIndex: number
+    functionIndex: number,
   ): void {
     let name: string;
     let parameters: string[];
@@ -81,7 +81,7 @@ export class InstrumentationTracker {
    */
   exitFunction(): FunctionInfo | undefined {
     const funcInfo = this.functionStack.pop();
-    
+
     if (!funcInfo) {
       return undefined;
     }
@@ -93,8 +93,8 @@ export class InstrumentationTracker {
       // Determine if we should memoize
       if (
         this.config.enableMemoization &&
-        (!this.config.memoizationThreshold || 
-         funcInfo.parameters.length <= this.config.memoizationThreshold)
+        (!this.config.memoizationThreshold ||
+          funcInfo.parameters.length <= this.config.memoizationThreshold)
       ) {
         funcInfo.needsMemoization = true;
       }
@@ -117,7 +117,6 @@ export class InstrumentationTracker {
 
     if (currentFunction) {
       currentFunction.callsTo.add(calleeName);
-      
     }
   }
 
@@ -168,11 +167,11 @@ export class InstrumentationTracker {
    */
   buildCallGraph(): Map<string, Set<string>> {
     const callGraph = new Map<string, Set<string>>();
-    
+
     for (const func of this.functions.values()) {
       callGraph.set(func.name, new Set(func.callsTo));
     }
-    
+
     return callGraph;
   }
 
@@ -185,11 +184,7 @@ export class InstrumentationTracker {
     const mutualRecursionSets = new Set<Set<string>>();
     const visited = new Set<string>();
 
-    function dfs(
-      node: string,
-      path: Set<string>,
-      graph: Map<string, Set<string>>
-    ): void {
+    function dfs(node: string, path: Set<string>, graph: Map<string, Set<string>>): void {
       if (path.has(node)) {
         // Found a cycle - extract the cycle
         const cycle = new Set<string>();
@@ -220,7 +215,6 @@ export class InstrumentationTracker {
       dfs(funcName, new Set(), callGraph);
     }
 
-
     return mutualRecursionSets;
   }
 }
@@ -241,4 +235,3 @@ export const DEFAULT_INSTRUMENTATION_CONFIG: InstrumentationConfig = {
   logRecursiveCalls: true,
   memoizationThreshold: 10,
 };
-

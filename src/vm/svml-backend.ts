@@ -36,6 +36,7 @@ export class SVMLBackend implements Backend {
     this.jit = options?.jit ?? true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(
     ast: StmtNS.FileInput,
     _environments: FunctionEnvironments,
@@ -45,7 +46,12 @@ export class SVMLBackend implements Backend {
         const compiler = SVMLCompiler.fromProgram(ast);
         const program = compiler.compileProgram(ast);
         const bindings = compiler.getBindings();
-        this.cached = { program, compiler, instrumentation: compiler.getInstrumentation(), bindings };
+        this.cached = {
+          program,
+          compiler,
+          instrumentation: compiler.getInstrumentation(),
+          bindings,
+        };
         this.lastAST = ast;
       }
 

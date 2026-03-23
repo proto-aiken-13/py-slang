@@ -42,8 +42,8 @@ export interface SVMLClosure {
   parentEnv: SVMLEnvironment | null;
   isMemoized?: boolean;
   memoCache?: Map<string, SVMLBoxType>;
-  lastSig?: number;    // last specialization signature key
-  lastIR?: SVMLIR;     // corresponding specialized IR
+  lastSig?: number; // last specialization signature key
+  lastIR?: SVMLIR; // corresponding specialized IR
 }
 
 /** Type guard: narrows SVMLBoxType to the three object variants. */
@@ -62,18 +62,14 @@ export class SVMLEnvironment {
 
   get(slot: number): SVMLBoxType {
     if (slot < 0 || slot >= this.locals.length) {
-      throw new Error(
-        `Environment slot ${slot} out of bounds (size: ${this.locals.length})`
-      );
+      throw new Error(`Environment slot ${slot} out of bounds (size: ${this.locals.length})`);
     }
     return this.locals[slot];
   }
 
   set(slot: number, value: SVMLBoxType): void {
     if (slot < 0 || slot >= this.locals.length) {
-      throw new Error(
-        `Environment slot ${slot} out of bounds (size: ${this.locals.length})`
-      );
+      throw new Error(`Environment slot ${slot} out of bounds (size: ${this.locals.length})`);
     }
     this.locals[slot] = value;
   }
@@ -199,9 +195,12 @@ export function getSVMLType(value: SVMLBoxType): SVMLType {
     return SVMLType.UNDEFINED;
   } else if (isSVMLObject(value)) {
     switch (value.type) {
-      case "closure": return SVMLType.CLOSURE;
-      case "array": return SVMLType.ARRAY;
-      case "iterator": return SVMLType.ITERATOR;
+      case "closure":
+        return SVMLType.CLOSURE;
+      case "array":
+        return SVMLType.ARRAY;
+      case "iterator":
+        return SVMLType.ITERATOR;
     }
   }
   throw new Error(`Unknown runtime type: ${typeof value}`);

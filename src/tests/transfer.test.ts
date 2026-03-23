@@ -3,8 +3,19 @@ import {
   transferUnaryNeg,
   transferCompare,
   transferNot,
-  negSign, addSigns, subSigns, mulSigns, divSigns, modSigns,
-  gtSigns, ltSigns, geSigns, leSigns, eqSigns, neqSigns, notBoolRef,
+  negSign,
+  addSigns,
+  subSigns,
+  mulSigns,
+  divSigns,
+  modSigns,
+  gtSigns,
+  ltSigns,
+  geSigns,
+  leSigns,
+  eqSigns,
+  neqSigns,
+  notBoolRef,
 } from "../specialization/transfer";
 import {
   positiveInteger,
@@ -73,12 +84,21 @@ describe("transferUnaryNeg", () => {
   });
 });
 
-const ALL_INT_REFS: IntRef[] = [IntRef.Bottom, IntRef.Neg, IntRef.Zero, IntRef.Pos, IntRef.NonZero, IntRef.NonNeg, IntRef.NonPos, IntRef.Top];
+const ALL_INT_REFS: IntRef[] = [
+  IntRef.Bottom,
+  IntRef.Neg,
+  IntRef.Zero,
+  IntRef.Pos,
+  IntRef.NonZero,
+  IntRef.NonNeg,
+  IntRef.NonPos,
+  IntRef.Top,
+];
 const ALL_BOOL_REFS: BoolRef[] = [BoolRef.Bottom, BoolRef.True, BoolRef.False, BoolRef.Top];
 
 describe("Sign lattice algebraic properties", () => {
   // Negation is self-inverse
-  test.each(ALL_INT_REFS)("negSign(negSign(%s)) = %s", (a) => {
+  test.each(ALL_INT_REFS)("negSign(negSign(%s)) = %s", a => {
     expect(negSign(negSign(a))).toBe(a);
   });
 
@@ -117,25 +137,25 @@ describe("Sign lattice algebraic properties", () => {
   });
 
   // Zero is additive identity
-  test.each(ALL_INT_REFS)("addSigns(%s, zero) = %s", (a) => {
+  test.each(ALL_INT_REFS)("addSigns(%s, zero) = %s", a => {
     expect(addSigns(a, IntRef.Zero)).toBe(a);
   });
 
   // Zero * anything = zero (except bottom)
-  test.each(ALL_INT_REFS.filter(a => a !== IntRef.Bottom))("mulSigns(%s, zero) = zero", (a) => {
+  test.each(ALL_INT_REFS.filter(a => a !== IntRef.Bottom))("mulSigns(%s, zero) = zero", a => {
     expect(mulSigns(a, IntRef.Zero)).toBe(IntRef.Zero);
   });
 
   // Bottom propagates through all arithmetic
-  test.each(ALL_INT_REFS)("addSigns(bottom, %s) = bottom", (a) => {
+  test.each(ALL_INT_REFS)("addSigns(bottom, %s) = bottom", a => {
     expect(addSigns(IntRef.Bottom, a)).toBe(IntRef.Bottom);
   });
-  test.each(ALL_INT_REFS)("mulSigns(bottom, %s) = bottom", (a) => {
+  test.each(ALL_INT_REFS)("mulSigns(bottom, %s) = bottom", a => {
     expect(mulSigns(IntRef.Bottom, a)).toBe(IntRef.Bottom);
   });
 
   // not is self-inverse for booleans
-  test.each(ALL_BOOL_REFS)("notBoolRef(notBoolRef(%s)) = %s", (a) => {
+  test.each(ALL_BOOL_REFS)("notBoolRef(notBoolRef(%s)) = %s", a => {
     expect(notBoolRef(notBoolRef(a))).toBe(a);
   });
 
@@ -149,23 +169,23 @@ describe("divSigns golden table", () => {
   // Floor division: 1//3=0, so pos//pos is nonneg, not pos
   const DIV_TABLE: Array<[IntRef, IntRef, IntRef]> = [
     // a,              b,              expected
-    [IntRef.Pos,      IntRef.Pos,     IntRef.NonNeg],
-    [IntRef.Neg,      IntRef.Neg,     IntRef.NonNeg],
-    [IntRef.Pos,      IntRef.Neg,     IntRef.NonPos],
-    [IntRef.Neg,      IntRef.Pos,     IntRef.NonPos],
-    [IntRef.Zero,     IntRef.Pos,     IntRef.Zero],
-    [IntRef.Zero,     IntRef.Neg,     IntRef.Zero],
-    [IntRef.Pos,      IntRef.Zero,    IntRef.Top],     // division by zero
-    [IntRef.Neg,      IntRef.Zero,    IntRef.Top],     // division by zero
-    [IntRef.Zero,     IntRef.Zero,    IntRef.Top],     // 0/0
-    [IntRef.NonNeg,   IntRef.Pos,     IntRef.NonNeg],
-    [IntRef.NonPos,   IntRef.Neg,     IntRef.NonNeg],
-    [IntRef.NonNeg,   IntRef.Neg,     IntRef.NonPos],
-    [IntRef.NonPos,   IntRef.Pos,     IntRef.NonPos],
-    [IntRef.Top,      IntRef.Pos,     IntRef.Top],
-    [IntRef.Pos,      IntRef.Top,     IntRef.Top],
-    [IntRef.Bottom,   IntRef.Pos,     IntRef.Bottom],
-    [IntRef.Pos,      IntRef.Bottom,  IntRef.Bottom],
+    [IntRef.Pos, IntRef.Pos, IntRef.NonNeg],
+    [IntRef.Neg, IntRef.Neg, IntRef.NonNeg],
+    [IntRef.Pos, IntRef.Neg, IntRef.NonPos],
+    [IntRef.Neg, IntRef.Pos, IntRef.NonPos],
+    [IntRef.Zero, IntRef.Pos, IntRef.Zero],
+    [IntRef.Zero, IntRef.Neg, IntRef.Zero],
+    [IntRef.Pos, IntRef.Zero, IntRef.Top], // division by zero
+    [IntRef.Neg, IntRef.Zero, IntRef.Top], // division by zero
+    [IntRef.Zero, IntRef.Zero, IntRef.Top], // 0/0
+    [IntRef.NonNeg, IntRef.Pos, IntRef.NonNeg],
+    [IntRef.NonPos, IntRef.Neg, IntRef.NonNeg],
+    [IntRef.NonNeg, IntRef.Neg, IntRef.NonPos],
+    [IntRef.NonPos, IntRef.Pos, IntRef.NonPos],
+    [IntRef.Top, IntRef.Pos, IntRef.Top],
+    [IntRef.Pos, IntRef.Top, IntRef.Top],
+    [IntRef.Bottom, IntRef.Pos, IntRef.Bottom],
+    [IntRef.Pos, IntRef.Bottom, IntRef.Bottom],
   ];
 
   test.each(DIV_TABLE)("divSigns(%s, %s) = %s", (a, b, expected) => {
@@ -175,12 +195,12 @@ describe("divSigns golden table", () => {
 
 describe("modSigns golden table (Python floor-mod semantics)", () => {
   const cases: [string, IntRef, IntRef, IntRef][] = [
-    ["pos % pos = nonneg",   4 as IntRef, 4 as IntRef, 6 as IntRef],
-    ["neg % pos = nonneg",   1 as IntRef, 4 as IntRef, 6 as IntRef],
-    ["pos % neg = nonpos",   4 as IntRef, 1 as IntRef, 3 as IntRef],
-    ["neg % neg = nonpos",   1 as IntRef, 1 as IntRef, 3 as IntRef],
-    ["zero % pos = zero",    2 as IntRef, 4 as IntRef, 2 as IntRef],
-    ["zero % neg = zero",    2 as IntRef, 1 as IntRef, 2 as IntRef],
+    ["pos % pos = nonneg", 4 as IntRef, 4 as IntRef, 6 as IntRef],
+    ["neg % pos = nonneg", 1 as IntRef, 4 as IntRef, 6 as IntRef],
+    ["pos % neg = nonpos", 4 as IntRef, 1 as IntRef, 3 as IntRef],
+    ["neg % neg = nonpos", 1 as IntRef, 1 as IntRef, 3 as IntRef],
+    ["zero % pos = zero", 2 as IntRef, 4 as IntRef, 2 as IntRef],
+    ["zero % neg = zero", 2 as IntRef, 1 as IntRef, 2 as IntRef],
     ["pos % zero = unknown", 4 as IntRef, 2 as IntRef, 7 as IntRef],
     ["any % unknown = unknown", 4 as IntRef, 7 as IntRef, 7 as IntRef],
   ];
@@ -204,12 +224,14 @@ describe("Comparison edge cases", () => {
   test("pos == neg = false", () => expect(eqSigns(IntRef.Pos, IntRef.Neg)).toBe(BoolRef.False));
   test("pos == zero = false", () => expect(eqSigns(IntRef.Pos, IntRef.Zero)).toBe(BoolRef.False));
   test("pos != neg = true", () => expect(neqSigns(IntRef.Pos, IntRef.Neg)).toBe(BoolRef.True));
-  test("zero != zero = false", () => expect(neqSigns(IntRef.Zero, IntRef.Zero)).toBe(BoolRef.False));
+  test("zero != zero = false", () =>
+    expect(neqSigns(IntRef.Zero, IntRef.Zero)).toBe(BoolRef.False));
 
   // Cases that MUST be top (soundness)
   test("pos > pos = top", () => expect(gtSigns(IntRef.Pos, IntRef.Pos)).toBe(BoolRef.Top));
   test("nonneg > zero = top", () => expect(gtSigns(IntRef.NonNeg, IntRef.Zero)).toBe(BoolRef.Top));
-  test("nonneg > nonneg = top", () => expect(gtSigns(IntRef.NonNeg, IntRef.NonNeg)).toBe(BoolRef.Top));
+  test("nonneg > nonneg = top", () =>
+    expect(gtSigns(IntRef.NonNeg, IntRef.NonNeg)).toBe(BoolRef.Top));
   test("top > top = top", () => expect(gtSigns(IntRef.Top, IntRef.Top)).toBe(BoolRef.Top));
   test("pos == pos = top", () => expect(eqSigns(IntRef.Pos, IntRef.Pos)).toBe(BoolRef.Top));
 

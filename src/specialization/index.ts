@@ -1,11 +1,25 @@
 // Re-export types from the shared product lattice module
 export type {
-  SoundType, AbstractValue, TypeEnv,
-  AnalysisResult, SlotInfo, SlotLookup,
+  SoundType,
+  AbstractValue,
+  TypeEnv,
+  AnalysisResult,
+  SlotInfo,
+  SlotLookup,
   SpecializableFunctionNode,
-  FunctionProfile, TypeInformation,
+  FunctionProfile,
+  TypeInformation,
 } from "./types";
-export { INT_BIT, BOOL_BIT, STR_BIT, NULL_BIT, CLOSURE_BIT, ALL_KINDS_MASK, IntRef, BoolRef } from "./types";
+export {
+  INT_BIT,
+  BOOL_BIT,
+  STR_BIT,
+  NULL_BIT,
+  CLOSURE_BIT,
+  ALL_KINDS_MASK,
+  IntRef,
+  BoolRef,
+} from "./types";
 
 // Re-export AST specialization
 export { specializeAST } from "./specialize-ast";
