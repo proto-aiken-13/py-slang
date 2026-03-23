@@ -8,6 +8,8 @@ export {
   STR_BIT,
   NULL_BIT,
   CLOSURE_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
   ALL_KINDS_MASK,
 } from "../types/abstract-value";
 export { IntRef, BoolRef } from "../types/abstract-value";

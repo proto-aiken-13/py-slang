@@ -6,7 +6,9 @@ export const BOOL_BIT = 2;
 export const STR_BIT = 4;
 export const NULL_BIT = 8;
 export const CLOSURE_BIT = 16;
-export const ALL_KINDS_MASK = INT_BIT | BOOL_BIT | STR_BIT | NULL_BIT | CLOSURE_BIT;
+export const FLOAT_BIT = 32;
+export const COMPLEX_BIT = 64;
+export const ALL_KINDS_MASK = INT_BIT | BOOL_BIT | STR_BIT | NULL_BIT | CLOSURE_BIT | FLOAT_BIT | COMPLEX_BIT;
 
 // Power-set bitmask: join = OR, meet = AND
 export const enum IntRef {
@@ -31,6 +33,7 @@ export interface SoundType {
   readonly kinds: number;
   readonly intRef: IntRef;
   readonly boolRef: BoolRef;
+  readonly floatRef: IntRef; // reuses IntRef enum for sign refinement
 }
 
 export interface AbstractValue {

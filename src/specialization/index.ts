@@ -16,6 +16,8 @@ export {
   STR_BIT,
   NULL_BIT,
   CLOSURE_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
   ALL_KINDS_MASK,
   IntRef,
   BoolRef,
