@@ -1,5 +1,6 @@
 import type { Backend } from "./backend";
 import { SVMLBackend } from "../vm/svml-backend";
+import { CSEBackend } from "../cse-machine/cse-backend";
 
 export type BackendType = "svml" | "cse";
 
@@ -15,7 +16,7 @@ export function createBackend(config?: BackendConfig): Backend {
     case "svml":
       return new SVMLBackend({ jit });
     case "cse":
-      throw new Error("CSE machine backend not implemented yet");
+      return new CSEBackend();
     default:
       throw new Error(`Unknown backend: ${backendType}`);
   }
