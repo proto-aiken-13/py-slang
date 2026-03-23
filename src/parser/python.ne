@@ -223,7 +223,7 @@ statementDef -> "def" %name params ":" block
 
 if_statement -> "if" expression ":" block ("elif" expression ":" block):* ("else" ":" block):?
   {% ([kw, test,, body, elifs, elseBlock]) => {
-       let else_ = elseBlock ? elseBlock[0][2] : null;
+       let else_ = elseBlock ? elseBlock[2] : null;
        for (let i = elifs.length - 1; i >= 0; i--) {
          const [ekw, etest, ecolon, ebody] = elifs[i];
          const endTok = else_ && else_.length > 0 ? else_[else_.length-1].endToken : ebody[ebody.length-1].endToken;
