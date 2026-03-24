@@ -6,6 +6,8 @@ import {
   STR_BIT,
   NULL_BIT,
   CLOSURE_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
   ALL_KINDS_MASK,
   IntRef,
   BoolRef,
@@ -64,6 +66,18 @@ describe("SVMLAdapter", () => {
         ],
       });
     });
+
+    test("float number maps to float", () => {
+      expect(adapter.toPython(3.14)).toEqual({ tag: "float", value: 3.14 });
+    });
+
+    test("NaN maps to float", () => {
+      expect(adapter.toPython(NaN)).toEqual({ tag: "float", value: NaN });
+    });
+
+    test("Infinity maps to float", () => {
+      expect(adapter.toPython(Infinity)).toEqual({ tag: "float", value: Infinity });
+    });
   });
 
   describe("toAbstractValue", () => {
@@ -117,6 +131,27 @@ describe("SVMLAdapter", () => {
       expect(av.sound.kinds).toBe(ALL_KINDS_MASK);
       expect(av.sound.intRef).toBe(IntRef.Top);
       expect(av.sound.boolRef).toBe(BoolRef.Top);
+    });
+
+    test("float maps to float kind", () => {
+      const av = adapter.toAbstractValue({ tag: "float", value: 3.14 });
+      expect(av.sound.kinds).toBe(FLOAT_BIT);
+    });
+
+    test("positive float maps to pos float refinement", () => {
+      const av = adapter.toAbstractValue({ tag: "float", value: 3.14 });
+      expect(av.sound.floatRef).toBe(IntRef.Pos);
+    });
+
+    test("NaN float maps to top float refinement", () => {
+      const av = adapter.toAbstractValue({ tag: "float", value: NaN });
+      expect(av.sound.kinds).toBe(FLOAT_BIT);
+      expect(av.sound.floatRef).toBe(IntRef.Top);
+    });
+
+    test("complex maps to complex kind", () => {
+      const av = adapter.toAbstractValue({ tag: "complex", real: 1, imag: 2 });
+      expect(av.sound.kinds).toBe(COMPLEX_BIT);
     });
   });
 });

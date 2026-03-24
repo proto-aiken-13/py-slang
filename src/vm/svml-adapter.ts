@@ -11,6 +11,11 @@ import {
   stringValue,
   closureValue,
   nullValue,
+  positiveFloat,
+  negativeFloat,
+  zeroFloat,
+  floatValue,
+  complexValue,
   TOP,
 } from "../types/lattice-ops";
 
@@ -19,7 +24,13 @@ export class SVMLAdapter implements BackendAdapter<SVMLBoxType> {
     if (native === null || native === undefined) return { tag: "none" };
     switch (typeof native) {
       case "number":
-        return { tag: "int", value: native };
+        // Use Number.isInteger to distinguish int from float.
+        // Limitation: SVML doesn't preserve the int/float distinction for
+        // integer-valued floats (e.g., 3.0 becomes 3 in JS).
+        if (Number.isInteger(native) && Number.isFinite(native)) {
+          return { tag: "int", value: native };
+        }
+        return { tag: "float", value: native };
       case "boolean":
         return { tag: "bool", value: native };
       case "string":
@@ -45,6 +56,15 @@ export class SVMLAdapter implements BackendAdapter<SVMLBoxType> {
         if (v < 0) return negativeInteger();
         return zeroInteger();
       }
+      case "float": {
+        const v = python.value;
+        if (Number.isNaN(v)) return floatValue(); // NaN has no meaningful sign → top
+        if (v > 0) return positiveFloat();
+        if (v < 0) return negativeFloat();
+        return zeroFloat();
+      }
+      case "complex":
+        return complexValue();
       case "bool":
         return python.value ? trueValue() : falseValue();
       case "str":
