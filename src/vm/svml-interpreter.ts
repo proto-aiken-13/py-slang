@@ -24,7 +24,7 @@ import OpCodes from "./opcodes";
 import { InstrumentationTracker } from "./instrumentation";
 import { executePrimitive } from "./sinter-primitives";
 import { UnsupportedOperandTypeError, ZeroDivisionError } from "./errors";
-import { pythonMod } from "../cse-machine/utils";
+import { pythonMod } from "../utils/arithmetic";
 import { StmtNS, ExprNS } from "../ast-types";
 import type { SVMLCompiler } from "./svml-compiler";
 

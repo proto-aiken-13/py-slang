@@ -291,26 +291,8 @@ export const checkStackOverFlow = (_context: Context, _control: Control) => {
 //   }
 // }
 
-export function pythonMod(a: number | bigint, b: number | bigint): number | bigint {
-  if (typeof a === "bigint" || typeof b === "bigint") {
-    const big_a = BigInt(a);
-    const big_b = BigInt(b);
-    const mod = big_a % big_b;
-
-    if ((mod < 0n && big_b > 0n) || (mod > 0n && big_b < 0n)) {
-      return mod + big_b;
-    } else {
-      return mod;
-    }
-  }
-  // both are numbers
-  const mod = a % b;
-  if ((mod < 0 && b > 0) || (mod > 0 && b < 0)) {
-    return mod + b;
-  } else {
-    return mod;
-  }
-}
+// Re-export from shared utils to maintain backward compatibility
+export { pythonMod } from "../utils/arithmetic";
 
 export default function assert(condition: boolean, message: string): asserts condition {
   if (!condition) {
