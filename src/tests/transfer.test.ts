@@ -23,9 +23,13 @@ import {
   zeroInteger,
   trueValue,
   falseValue,
+  positiveFloat,
+  negativeFloat,
+  zeroFloat,
+  complexValue,
   TOP,
 } from "../types/lattice-ops";
-import { IntRef, BoolRef, INT_BIT, BOOL_BIT } from "../types/abstract-value";
+import { IntRef, BoolRef, INT_BIT, BOOL_BIT, FLOAT_BIT, COMPLEX_BIT } from "../types/abstract-value";
 
 describe("transferBinaryOp", () => {
   test("pos + pos = pos", () => {
@@ -238,5 +242,72 @@ describe("Comparison edge cases", () => {
   // Cases from bug we found: nonneg > zero must NOT be "true" (0 > 0 is false)
   test("nonneg > zero is NOT true (0 > 0 = false)", () => {
     expect(gtSigns(IntRef.NonNeg, IntRef.Zero)).not.toBe(BoolRef.True);
+  });
+});
+
+describe("transferBinaryOp with floats", () => {
+  test("float + float = float (sign top)", () => {
+    const result = transferBinaryOp("+", positiveFloat(), negativeFloat());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+    expect(result.sound.floatRef).toBe(IntRef.Top);
+  });
+
+  test("posFloat + posFloat = posFloat", () => {
+    const result = transferBinaryOp("+", positiveFloat(), positiveFloat());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+    expect(result.sound.floatRef).toBe(IntRef.Pos);
+  });
+
+  test("int + float = float (per spec: promotion)", () => {
+    const result = transferBinaryOp("+", positiveInteger(), positiveFloat());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+  });
+
+  test("float / float = float", () => {
+    const result = transferBinaryOp("/", positiveFloat(), positiveFloat());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+  });
+
+  test("int / int = float (per spec: true division)", () => {
+    const result = transferBinaryOp("/", positiveInteger(), positiveInteger());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+  });
+});
+
+describe("transferBinaryOp with complex", () => {
+  test("complex + anything numeric = complex", () => {
+    const result = transferBinaryOp("+", complexValue(), positiveInteger());
+    expect(result.sound.kinds).toBe(COMPLEX_BIT);
+  });
+
+  test("int + complex = complex", () => {
+    const result = transferBinaryOp("+", positiveInteger(), complexValue());
+    expect(result.sound.kinds).toBe(COMPLEX_BIT);
+  });
+
+  test("float + complex = complex", () => {
+    const result = transferBinaryOp("+", positiveFloat(), complexValue());
+    expect(result.sound.kinds).toBe(COMPLEX_BIT);
+  });
+});
+
+describe("transferCompare with floats", () => {
+  test("posFloat > zeroFloat = true", () => {
+    const result = transferCompare(">", positiveFloat(), zeroFloat());
+    expect(result.sound.boolRef).toBe(BoolRef.True);
+  });
+
+  test("int > float = bool (top, mixed numeric)", () => {
+    const result = transferCompare(">", positiveInteger(), positiveFloat());
+    expect(result.sound.kinds).toBe(BOOL_BIT);
+    expect(result.sound.boolRef).toBe(BoolRef.Top);
+  });
+});
+
+describe("transferUnaryNeg with float", () => {
+  test("-posFloat = negFloat", () => {
+    const result = transferUnaryNeg(positiveFloat());
+    expect(result.sound.kinds).toBe(FLOAT_BIT);
+    expect(result.sound.floatRef).toBe(IntRef.Neg);
   });
 });

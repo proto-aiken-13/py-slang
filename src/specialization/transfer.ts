@@ -5,8 +5,10 @@ import {
   type AbstractValue,
   INT_BIT,
   BOOL_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
 } from "../types/abstract-value";
-import { TOP, integer, boolean } from "../types/lattice-ops";
+import { TOP, integer, boolean, floatValue, complexValue as complexVal } from "../types/lattice-ops";
 
 // ========================================================================
 // Sign arithmetic transfer functions (operate on IntRef bitmasks)
@@ -165,37 +167,66 @@ export function transferBinaryOp(
   left: AbstractValue,
   right: AbstractValue,
 ): AbstractValue {
-  const lOnlyInt = left.sound.kinds === INT_BIT;
-  const rOnlyInt = right.sound.kinds === INT_BIT;
-  if (!lOnlyInt || !rOnlyInt) return TOP;
+  const lk = left.sound.kinds;
+  const rk = right.sound.kinds;
+
+  // Complex promotion: if either operand is (only) complex, result is complex
+  if (lk === COMPLEX_BIT || rk === COMPLEX_BIT) {
+    const otherKinds = lk === COMPLEX_BIT ? rk : lk;
+    // complex op numeric = complex; complex op non-numeric = TOP
+    if (otherKinds & ~(INT_BIT | FLOAT_BIT | COMPLEX_BIT)) return TOP;
+    return complexVal();
+  }
+
+  const lIsFloat = lk === FLOAT_BIT;
+  const rIsFloat = rk === FLOAT_BIT;
+  const lIsInt = lk === INT_BIT;
+  const rIsInt = rk === INT_BIT;
+
+  // True division always returns float (per spec)
+  if (op === "/") {
+    if (lIsInt && rIsInt) {
+      return floatValue(divSigns(left.sound.intRef, right.sound.intRef));
+    }
+    if ((lIsInt || lIsFloat) && (rIsInt || rIsFloat)) {
+      const lRef = lIsFloat ? left.sound.floatRef : left.sound.intRef;
+      const rRef = rIsFloat ? right.sound.floatRef : right.sound.intRef;
+      return floatValue(divSigns(lRef, rRef));
+    }
+    return TOP;
+  }
+
+  // Float + int or float + float → float result
+  if ((lIsFloat && rIsInt) || (lIsInt && rIsFloat) || (lIsFloat && rIsFloat)) {
+    const lRef = lIsFloat ? left.sound.floatRef : left.sound.intRef;
+    const rRef = rIsFloat ? right.sound.floatRef : right.sound.intRef;
+    let resultRef: IntRef;
+    switch (op) {
+      case "+": resultRef = addSigns(lRef, rRef); break;
+      case "-": resultRef = subSigns(lRef, rRef); break;
+      case "*": resultRef = mulSigns(lRef, rRef); break;
+      case "//": resultRef = divSigns(lRef, rRef); break;
+      case "%": resultRef = modSigns(lRef, rRef); break;
+      default: return TOP;
+    }
+    return floatValue(resultRef);
+  }
+
+  // Pure int op int
+  if (!lIsInt || !rIsInt) return TOP;
 
   const lRef = left.sound.intRef;
   const rRef = right.sound.intRef;
 
   let resultRef: IntRef;
   switch (op) {
-    case "+":
-      resultRef = addSigns(lRef, rRef);
-      break;
-    case "-":
-      resultRef = subSigns(lRef, rRef);
-      break;
-    case "*":
-      resultRef = mulSigns(lRef, rRef);
-      break;
-    case "/":
-      resultRef = divSigns(lRef, rRef);
-      break;
-    case "//":
-      resultRef = divSigns(lRef, rRef);
-      break;
-    case "%":
-      resultRef = modSigns(lRef, rRef);
-      break;
-    default:
-      return TOP;
+    case "+": resultRef = addSigns(lRef, rRef); break;
+    case "-": resultRef = subSigns(lRef, rRef); break;
+    case "*": resultRef = mulSigns(lRef, rRef); break;
+    case "//": resultRef = divSigns(lRef, rRef); break;
+    case "%": resultRef = modSigns(lRef, rRef); break;
+    default: return TOP;
   }
-
   return integer(resultRef);
 }
 
@@ -204,43 +235,70 @@ export function transferCompare(
   left: AbstractValue,
   right: AbstractValue,
 ): AbstractValue {
-  const lOnlyInt = left.sound.kinds === INT_BIT;
-  const rOnlyInt = right.sound.kinds === INT_BIT;
-  if (!lOnlyInt || !rOnlyInt) return boolean(3 as BoolRef);
+  const lk = left.sound.kinds;
+  const rk = right.sound.kinds;
 
-  const lRef = left.sound.intRef;
-  const rRef = right.sound.intRef;
-
-  let resultRef: BoolRef;
-  switch (op) {
-    case ">":
-      resultRef = gtSigns(lRef, rRef);
-      break;
-    case "<":
-      resultRef = ltSigns(lRef, rRef);
-      break;
-    case ">=":
-      resultRef = geSigns(lRef, rRef);
-      break;
-    case "<=":
-      resultRef = leSigns(lRef, rRef);
-      break;
-    case "==":
-      resultRef = eqSigns(lRef, rRef);
-      break;
-    case "!=":
-      resultRef = neqSigns(lRef, rRef);
-      break;
-    default:
-      return boolean(3 as BoolRef);
+  // == and != work on any types
+  if (op === "==" || op === "!=") {
+    if (lk === INT_BIT && rk === INT_BIT) {
+      const ref = op === "==" ? eqSigns(left.sound.intRef, right.sound.intRef)
+                               : neqSigns(left.sound.intRef, right.sound.intRef);
+      return boolean(ref);
+    }
+    if (lk === FLOAT_BIT && rk === FLOAT_BIT) {
+      const ref = op === "==" ? eqSigns(left.sound.floatRef, right.sound.floatRef)
+                               : neqSigns(left.sound.floatRef, right.sound.floatRef);
+      return boolean(ref);
+    }
+    return boolean(3 as BoolRef);
   }
 
-  return boolean(resultRef);
+  // Ordering comparisons: not valid on complex
+  if (lk === COMPLEX_BIT || rk === COMPLEX_BIT) return TOP;
+
+  // Pure int comparisons
+  if (lk === INT_BIT && rk === INT_BIT) {
+    const lRef = left.sound.intRef;
+    const rRef = right.sound.intRef;
+    let resultRef: BoolRef;
+    switch (op) {
+      case ">": resultRef = gtSigns(lRef, rRef); break;
+      case "<": resultRef = ltSigns(lRef, rRef); break;
+      case ">=": resultRef = geSigns(lRef, rRef); break;
+      case "<=": resultRef = leSigns(lRef, rRef); break;
+      default: return boolean(3 as BoolRef);
+    }
+    return boolean(resultRef);
+  }
+
+  // Pure float comparisons
+  if (lk === FLOAT_BIT && rk === FLOAT_BIT) {
+    const lRef = left.sound.floatRef;
+    const rRef = right.sound.floatRef;
+    let resultRef: BoolRef;
+    switch (op) {
+      case ">": resultRef = gtSigns(lRef, rRef); break;
+      case "<": resultRef = ltSigns(lRef, rRef); break;
+      case ">=": resultRef = geSigns(lRef, rRef); break;
+      case "<=": resultRef = leSigns(lRef, rRef); break;
+      default: return boolean(3 as BoolRef);
+    }
+    return boolean(resultRef);
+  }
+
+  // Mixed int/float comparison — conservative
+  if ((lk === INT_BIT || lk === FLOAT_BIT) && (rk === INT_BIT || rk === FLOAT_BIT)) {
+    return boolean(3 as BoolRef);
+  }
+
+  return boolean(3 as BoolRef);
 }
 
 export function transferUnaryNeg(operand: AbstractValue): AbstractValue {
-  if (!(operand.sound.kinds & INT_BIT)) return TOP;
-  return integer(negSign(operand.sound.intRef));
+  if (operand.sound.kinds === COMPLEX_BIT) return complexVal();
+  if (operand.sound.kinds === FLOAT_BIT) return floatValue(negSign(operand.sound.floatRef));
+  if (operand.sound.kinds === INT_BIT) return integer(negSign(operand.sound.intRef));
+  return TOP;
 }
 
 export function transferNot(operand: AbstractValue): AbstractValue {
