@@ -1,4 +1,4 @@
-import { ExprNS, StmtNS } from "../ast-types";
+import { ExprNS, StmtNS } from "../../ast-types";
 import { Closure } from "./closure";
 import { Context } from "./context";
 import { Heap } from "./heap";

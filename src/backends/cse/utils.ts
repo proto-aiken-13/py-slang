@@ -1,6 +1,6 @@
-import { ExprNS, StmtNS } from "../ast-types";
-import { NameError, UnboundLocalError } from "../errors/errors";
-import { builtInConstants, builtIns } from "../stdlib";
+import { ExprNS, StmtNS } from "../../ast-types";
+import { NameError, UnboundLocalError } from "../../errors/errors";
+import { builtInConstants, builtIns } from "../../stdlib";
 import { Context } from "./context";
 import { Control, ControlItem } from "./control";
 import { currentEnvironment, Environment } from "./environment";
@@ -292,7 +292,7 @@ export const checkStackOverFlow = (_context: Context, _control: Control) => {
 // }
 
 // Re-export from shared utils to maintain backward compatibility
-export { pythonMod } from "../utils/arithmetic";
+export { pythonMod } from "../../utils/arithmetic";
 
 export default function assert(condition: boolean, message: string): asserts condition {
   if (!condition) {

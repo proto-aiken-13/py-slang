@@ -6,12 +6,12 @@
 
 /* tslint:disable:max-classes-per-file */
 
-import { ExprNS, StmtNS } from "../ast-types";
-import { TokenType } from "../tokens";
-import * as error from "../errors/errors";
-import { BuiltinReassignmentError } from "../errors/errors";
-import { builtIns, toPythonString } from "../stdlib";
-import { CSEBreak, RecursivePartial, Representation, Result } from "../types";
+import { ExprNS, StmtNS } from "../../ast-types";
+import { TokenType } from "../../tokens";
+import * as error from "../../errors/errors";
+import { BuiltinReassignmentError } from "../../errors/errors";
+import { builtIns, toPythonString } from "../../stdlib";
+import { CSEBreak, RecursivePartial, Representation, Result } from "../../types";
 import { Closure } from "./closure";
 import { Context } from "./context";
 import { Control, ControlItem } from "./control";

@@ -1,4 +1,4 @@
-import type { PythonType } from "../types/python-type";
+import type { PythonType } from "../../types/python-type";
 import type { Value } from "./stash";
 
 export class CSEAdapter {

@@ -1,5 +1,5 @@
-import { ExprNS, StmtNS } from "../ast-types";
-import { TokenType } from "../tokens";
+import { ExprNS, StmtNS } from "../../ast-types";
+import { TokenType } from "../../tokens";
 import { Environment } from "./environment";
 
 export type Node = { isEnvDependent?: boolean } & (StmtNS.Stmt | ExprNS.Expr | StatementSequence);
@@ -149,7 +149,7 @@ export type Instr =
   | BoolOpInstr
   | ConditionalBoolOpInstr;
 
-export { typeTranslator } from "../utils/type-names";
+export { typeTranslator } from "../../utils/type-names";
 
 export function operatorTranslator(operator: TokenType | string) {
   switch (operator) {

@@ -1,7 +1,7 @@
-import type { Backend } from "../backend/backend";
-import type { StmtNS } from "../ast-types";
-import type { FunctionEnvironments } from "../resolver";
-import type { ComputationalResult } from "../types/result";
+import type { Backend } from "../types";
+import type { StmtNS } from "../../ast-types";
+import type { FunctionEnvironments } from "../../resolver";
+import type { ComputationalResult } from "../../types/result";
 import { Context } from "./context";
 import { evaluate } from "./interpreter";
 import { CSEAdapter } from "./cse-adapter";

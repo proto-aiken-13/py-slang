@@ -1,6 +1,6 @@
-import { TokenType } from "../tokens";
+import { TokenType } from "../../tokens";
 import { Environment } from "./environment";
-import { ExprNS } from "../ast-types";
+import { ExprNS } from "../../ast-types";
 import {
   AppInstr,
   AssmtInstr,
