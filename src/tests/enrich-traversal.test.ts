@@ -12,9 +12,11 @@ import { StmtNS, ExprNS } from "../ast-types";
 import { EnrichedFileInput, specialize } from "../specialization/enrich";
 import { INT_BIT } from "../types/abstract-value";
 
-async function buildEnriched(code: string): Promise<{ ast: StmtNS.FileInput; enriched: EnrichedFileInput }> {
+async function buildEnriched(
+  code: string,
+): Promise<{ ast: StmtNS.FileInput; enriched: EnrichedFileInput }> {
   const src = code.endsWith("\n") ? code : code + "\n";
-  const ast = parse(src) as StmtNS.FileInput;
+  const ast = parse(src);
   const backend = new SVMLBackend({ jit: true });
   await backend.run(ast, new Map());
   const typeInfo = backend.collectTypeInfo();
@@ -38,9 +40,7 @@ describe("enrich.ts copyExprTypes traversal", () => {
   test("annotates the binary node in: def f(x): return x + 1", async () => {
     const { ast, enriched } = await buildEnriched("def f(x):\n  return x + 1\nf(5)");
 
-    const funcDef = ast.statements.find(
-      (s) => s instanceof StmtNS.FunctionDef,
-    ) as StmtNS.FunctionDef;
+    const funcDef = ast.statements.find(s => s instanceof StmtNS.FunctionDef) as StmtNS.FunctionDef;
     const returnStmt = funcDef.body[0] as StmtNS.Return;
     const binaryExpr = returnStmt.value!; // x + 1
 
@@ -53,9 +53,7 @@ describe("enrich.ts copyExprTypes traversal", () => {
     const src = "def f(x, y):\n  return x + y * 2\nf(3, 4)\n";
     const { ast, enriched } = await buildEnriched(src);
 
-    const funcDef = ast.statements.find(
-      (s) => s instanceof StmtNS.FunctionDef,
-    ) as StmtNS.FunctionDef;
+    const funcDef = ast.statements.find(s => s instanceof StmtNS.FunctionDef) as StmtNS.FunctionDef;
     const returnStmt = funcDef.body[0] as StmtNS.Return;
     const outerBinary = returnStmt.value!; // x + (y * 2)
 
@@ -76,9 +74,7 @@ describe("enrich.ts copyExprTypes traversal", () => {
     const src = "def f(x, y):\n  return x + y\nf(3, 4)\n";
     const { ast, enriched } = await buildEnriched(src);
 
-    const funcDef = ast.statements.find(
-      (s) => s instanceof StmtNS.FunctionDef,
-    ) as StmtNS.FunctionDef;
+    const funcDef = ast.statements.find(s => s instanceof StmtNS.FunctionDef) as StmtNS.FunctionDef;
     const returnStmt = funcDef.body[0] as StmtNS.Return;
     const binaryExpr = returnStmt.value!;
 

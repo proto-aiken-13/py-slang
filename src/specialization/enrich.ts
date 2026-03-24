@@ -2,7 +2,12 @@ import { StmtNS, ExprNS } from "../ast-types";
 import type { AbstractValue, TypeEnv } from "../types/abstract-value";
 import { join } from "../types/lattice-ops";
 import { specializeAST } from "./specialize-ast";
-import type { FunctionProfile, SlotLookup, SpecializableFunctionNode, TypeInformation } from "./types";
+import type {
+  FunctionProfile,
+  SlotLookup,
+  SpecializableFunctionNode,
+  TypeInformation,
+} from "./types";
 import { traverseAST } from "../validator/traverse";
 
 // lambdaBodyCache is created per specialize() call to avoid memory leaks.
@@ -72,7 +77,7 @@ export function specialize(
       body = wrapper;
     } else {
       // FunctionDef and MultiLambda both have a `.body: Stmt[]` field.
-      body = (funcNode as StmtNS.FunctionDef | ExprNS.MultiLambda).body;
+      body = funcNode.body;
     }
 
     const slotLookup = slotLookupFactory(funcNode);
@@ -96,7 +101,7 @@ function copyExprTypes(
   dst: WeakMap<object, AbstractValue>,
 ): void {
   for (const stmt of stmts) {
-    traverseAST(stmt, (node) => {
+    traverseAST(stmt, node => {
       const v = src.get(node);
       if (v !== undefined) dst.set(node, v);
     });

@@ -1,13 +1,9 @@
 import type { StmtNS } from "../ast-types";
-import type { AbstractValue, TypeEnv } from "../types/abstract-value";
+import type { TypeEnv } from "../types/abstract-value";
 import type { AnalysisResult, SlotLookup } from "../specialization/types";
 
 export interface Specializer {
-  analyze(
-    body: StmtNS.Stmt[],
-    bindings: TypeEnv,
-    slotLookup: SlotLookup,
-  ): AnalysisResult;
+  analyze(body: StmtNS.Stmt[], bindings: TypeEnv, slotLookup: SlotLookup): AnalysisResult;
 }
 
 export class SpecializationOrchestrator {

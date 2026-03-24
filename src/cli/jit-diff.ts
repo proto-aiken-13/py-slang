@@ -15,6 +15,7 @@
  */
 
 // __DEBUG__ is injected by rollup in production builds; define it for tsx/ts-node.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).__DEBUG__ = false;
 
 import { Command } from "commander";
@@ -32,11 +33,11 @@ import { EnrichedFileInput } from "../specialization/enrich";
 
 // ── ANSI colours ──────────────────────────────────────────────────────────────
 
-const RED    = (s: string) => `\x1b[31m${s}\x1b[0m`;
-const GREEN  = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const CYAN   = (s: string) => `\x1b[36m${s}\x1b[0m`;
+const RED = (s: string) => `\x1b[31m${s}\x1b[0m`;
+const GREEN = (s: string) => `\x1b[32m${s}\x1b[0m`;
+const CYAN = (s: string) => `\x1b[36m${s}\x1b[0m`;
 const YELLOW = (s: string) => `\x1b[33m${s}\x1b[0m`;
-const BOLD   = (s: string) => `\x1b[1m${s}\x1b[0m`;
+const BOLD = (s: string) => `\x1b[1m${s}\x1b[0m`;
 
 // ── WAT generation ────────────────────────────────────────────────────────────
 
@@ -69,7 +70,10 @@ function extractFunctions(wat: string): Map<string, string> {
 
 function countParens(s: string): number {
   let n = 0;
-  for (const c of s) { if (c === "(") n++; else if (c === ")") n--; }
+  for (const c of s) {
+    if (c === "(") n++;
+    else if (c === ")") n--;
+  }
   return n;
 }
 
@@ -85,7 +89,10 @@ function prettyFunc(body: string): string {
 
   for (const tok of tokens) {
     if (tok === "(") {
-      if (line.trim()) { lines.push("  ".repeat(depth) + line.trim()); line = ""; }
+      if (line.trim()) {
+        lines.push("  ".repeat(depth) + line.trim());
+        line = "";
+      }
       line = "(";
       depth++;
     } else if (tok === ")") {
@@ -105,11 +112,17 @@ function prettyFunc(body: string): string {
 }
 
 /** Compile AST → compact WAT string (with named calls). */
-async function toCompactWat(ast: StmtNS.FileInput, annotations?: WeakMap<object, unknown>): Promise<string> {
+function toCompactWat(
+  ast: StmtNS.FileInput,
+  annotations?: WeakMap<object, unknown>,
+): Promise<string> {
   const gen = new BuilderGenerator();
-  if (annotations) gen.withAnnotations(annotations as WeakMap<object, import("../types/abstract-value").AbstractValue>);
+  if (annotations)
+    gen.withAnnotations(
+      annotations as WeakMap<object, import("../types/abstract-value").AbstractValue>,
+    );
   const ir = gen.visit(ast);
-  return new WatGenerator().visit(ir) as string;
+  return new WatGenerator().visit(ir);
 }
 
 // ── SVML IR formatting ────────────────────────────────────────────────────────
@@ -122,7 +135,8 @@ const OPCODE_NAMES: ReadonlyMap<number, string> = new Map(
 );
 
 /** Opcodes that get specialized by JIT (generic → typed variant). */
-const SVML_SPECIALIZED_RE = /\b(ADD|SUB|MUL|DIV|MOD|LT|GT|LE|GE|EQ|NEQ|NOT|NEG|POP|LDL|STL|LDP|STP|LDA|STA|RET)F\b/;
+const SVML_SPECIALIZED_RE =
+  /\b(ADD|SUB|MUL|DIV|MOD|LT|GT|LE|GE|EQ|NEQ|NOT|NEG|POP|LDL|STL|LDP|STP|LDA|STA|RET)F\b/;
 
 /**
  * Format an SVMLProgram as a map of "fn<index>" → instruction listing.
@@ -154,7 +168,7 @@ function formatSvmlFunctions(program: SVMLProgram): Map<string, string> {
 function toSvmlProgram(ast: StmtNS.FileInput): SVMLProgram {
   const compiler = SVMLCompiler.fromProgram(ast);
   if (ast instanceof EnrichedFileInput) {
-    compiler.setASTAnnotations(ast.typeAnnotations as WeakMap<object, import("../types/abstract-value").AbstractValue>);
+    compiler.setASTAnnotations(ast.typeAnnotations);
   }
   return compiler.compileProgram(ast);
 }
@@ -168,7 +182,12 @@ const CONTEXT = 2;
  * Diff two pretty-printed function bodies line by line.
  * highlightRe: lines matching this in the "add" side are bolded green.
  */
-function diffFunc(name: string, before: string, after: string, highlightRe: RegExp): { changed: boolean; specializations: number } {
+function diffFunc(
+  name: string,
+  before: string,
+  after: string,
+  highlightRe: RegExp,
+): { changed: boolean; specializations: number } {
   const a = before.split("\n");
   const b = after.split("\n");
 
@@ -189,10 +208,11 @@ function diffFunc(name: string, before: string, after: string, highlightRe: RegE
   let lastEnd = -1;
 
   for (const { idx, kind } of changes) {
-    const start  = Math.max(0, idx - CONTEXT);
-    const ctxEnd = kind === "del"
-      ? Math.min(a.length - 1, idx + CONTEXT)
-      : Math.min(b.length - 1, idx + CONTEXT);
+    const start = Math.max(0, idx - CONTEXT);
+    const ctxEnd =
+      kind === "del"
+        ? Math.min(a.length - 1, idx + CONTEXT)
+        : Math.min(b.length - 1, idx + CONTEXT);
 
     if (start > lastEnd + 1 && lastEnd >= 0) {
       console.log(CYAN("  ..."));
@@ -200,7 +220,10 @@ function diffFunc(name: string, before: string, after: string, highlightRe: RegE
 
     for (let i = start; i < idx; i++) {
       const key = `ctx:${i}`;
-      if (!printed.has(key)) { console.log(`  ${a[i] ?? ""}`); printed.add(key); }
+      if (!printed.has(key)) {
+        console.log(`  ${a[i] ?? ""}`);
+        printed.add(key);
+      }
     }
 
     const key = `${kind}:${idx}`;
@@ -218,7 +241,10 @@ function diffFunc(name: string, before: string, after: string, highlightRe: RegE
     const src = kind === "del" ? a : b;
     for (let i = idx + 1; i <= ctxEnd; i++) {
       const key = `ctx:${i}`;
-      if (!printed.has(key)) { console.log(`  ${src[i] ?? ""}`); printed.add(key); }
+      if (!printed.has(key)) {
+        console.log(`  ${src[i] ?? ""}`);
+        printed.add(key);
+      }
     }
 
     lastEnd = ctxEnd;
@@ -243,13 +269,13 @@ function diffFunctions(
 
   for (const name of allNames) {
     const bBefore = before.get(name) ?? "";
-    const bAfter  = after.get(name) ?? "";
+    const bAfter = after.get(name) ?? "";
     if (bBefore === bAfter) continue;
 
     const { changed, specializations } = diffFunc(
       name,
       bBefore ? pretty(bBefore) : "(not present)",
-      bAfter  ? pretty(bAfter)  : "(not present)",
+      bAfter ? pretty(bAfter) : "(not present)",
       highlightRe,
     );
     if (changed) {
@@ -266,10 +292,12 @@ function diffFunctions(
     return;
   }
 
-  console.log(BOLD(
-    `Summary: ${totalChanged} function(s) changed, ` +
-    `${totalSpecializations} fast-int specialization(s) applied.`,
-  ));
+  console.log(
+    BOLD(
+      `Summary: ${totalChanged} function(s) changed, ` +
+        `${totalSpecializations} fast-int specialization(s) applied.`,
+    ),
+  );
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -292,9 +320,7 @@ async function main() {
     process.exit(1);
   }
 
-  const src = file
-    ? fs.readFileSync(file, "utf-8")
-    : fs.readFileSync("/dev/stdin", "utf-8");
+  const src = file ? fs.readFileSync(file, "utf-8") : fs.readFileSync("/dev/stdin", "utf-8");
 
   const ast = parse(src.endsWith("\n") ? src : src + "\n");
   const emptyEnvs = new Map() as import("../resolver").FunctionEnvironments;
@@ -322,31 +348,42 @@ async function main() {
 
   if (opts.backend === "svml") {
     const beforeProg = toSvmlProgram(ast);
-    const afterProg  = toSvmlProgram(enriched);
+    const afterProg = toSvmlProgram(enriched);
 
     if (opts.full) {
       console.log(BOLD("=== BEFORE (generic SVML) ==="));
       for (const [name, body] of formatSvmlFunctions(beforeProg)) {
-        console.log(CYAN(`fn ${name}:`)); console.log(body);
+        console.log(CYAN(`fn ${name}:`));
+        console.log(body);
       }
       console.log(BOLD("\n=== AFTER (JIT-specialized SVML) ==="));
       for (const [name, body] of formatSvmlFunctions(afterProg)) {
-        console.log(CYAN(`fn ${name}:`)); console.log(body);
+        console.log(CYAN(`fn ${name}:`));
+        console.log(body);
       }
       return;
     }
 
-    console.log(BOLD("JIT specialization diff") + "  " +
-      CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[svml]"));
+    console.log(
+      BOLD("JIT specialization diff") +
+        "  " +
+        CYAN(`(${file ?? "stdin"})`) +
+        "  " +
+        YELLOW("[svml]"),
+    );
     console.log(RED("  - generic") + "   " + BOLD(GREEN("+ specialized (bold = typed op)")));
     console.log("─".repeat(60));
-    diffFunctions(formatSvmlFunctions(beforeProg), formatSvmlFunctions(afterProg), SVML_SPECIALIZED_RE);
+    diffFunctions(
+      formatSvmlFunctions(beforeProg),
+      formatSvmlFunctions(afterProg),
+      SVML_SPECIALIZED_RE,
+    );
     return;
   }
 
   // ── wasm backend (default) ─────────────────────────────────────────────────
   const beforeWat = await toCompactWat(ast);
-  const afterWat  = await toCompactWat(enriched, enriched.typeAnnotations);
+  const afterWat = await toCompactWat(enriched, enriched.typeAnnotations);
 
   if (opts.full) {
     console.log(BOLD("=== BEFORE (generic) ==="));
@@ -357,13 +394,17 @@ async function main() {
   }
 
   const beforeFuncs = extractFunctions(beforeWat);
-  const afterFuncs  = extractFunctions(afterWat);
+  const afterFuncs = extractFunctions(afterWat);
 
-  console.log(BOLD("JIT specialization diff") + "  " +
-    CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[wasm]"));
+  console.log(
+    BOLD("JIT specialization diff") + "  " + CYAN(`(${file ?? "stdin"})`) + "  " + YELLOW("[wasm]"),
+  );
   console.log(RED("  - generic") + "   " + BOLD(GREEN("+ specialized (bold = fast-int)")));
   console.log("─".repeat(60));
   diffFunctions(beforeFuncs, afterFuncs, FAST_INT_RE, prettyFunc);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

@@ -51,16 +51,7 @@ import {
   SET_PARAM_FX,
   TYPE_TAG,
 } from "./constants";
-import {
-  f64,
-  global,
-  i32,
-  i64,
-  local,
-  memory,
-  mut,
-  wasm,
-} from "@sourceacademy/wasm-util";
+import { f64, global, i32, i64, local, memory, mut, wasm } from "@sourceacademy/wasm-util";
 import {
   WasmCall,
   WasmExport,
@@ -77,67 +68,84 @@ type BuiltInDef = {
 };
 
 const builtInFunctions = new Map<string, BuiltInDef>([
-  ["print", {
-    arity: 1,
-    body: wasm
-      .call(LOG_FX)
-      .args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
-    isVoid: true,
-  }],
-  ["pair", {
-    arity: 2,
-    body: wasm
-      .call(MAKE_PAIR_FX)
-      .args(
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
-      ),
-    isVoid: false,
-  }],
-  ["head", {
-    arity: 1,
-    body: wasm
-      .call(GET_PAIR_HEAD_FX)
-      .args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
-    isVoid: false,
-  }],
-  ["tail", {
-    arity: 1,
-    body: wasm
-      .call(GET_PAIR_TAIL_FX)
-      .args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
-    isVoid: false,
-  }],
-  ["set_head", {
-    arity: 2,
-    body: wasm
-      .call(SET_PAIR_HEAD_FX)
-      .args(
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
-      ),
-    isVoid: true,
-  }],
-  ["set_tail", {
-    arity: 2,
-    body: wasm
-      .call(SET_PAIR_TAIL_FX)
-      .args(
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
-        wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
-      ),
-    isVoid: true,
-  }],
-  ["bool", {
-    arity: 1,
-    body: [
-      i32.const(TYPE_TAG.BOOL),
-      wasm
-        .call(BOOLISE_FX)
+  [
+    "print",
+    {
+      arity: 1,
+      body: wasm.call(LOG_FX).args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
+      isVoid: true,
+    },
+  ],
+  [
+    "pair",
+    {
+      arity: 2,
+      body: wasm
+        .call(MAKE_PAIR_FX)
+        .args(
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
+        ),
+      isVoid: false,
+    },
+  ],
+  [
+    "head",
+    {
+      arity: 1,
+      body: wasm
+        .call(GET_PAIR_HEAD_FX)
         .args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
-    ],
-    isVoid: false,
-  }],
+      isVoid: false,
+    },
+  ],
+  [
+    "tail",
+    {
+      arity: 1,
+      body: wasm
+        .call(GET_PAIR_TAIL_FX)
+        .args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
+      isVoid: false,
+    },
+  ],
+  [
+    "set_head",
+    {
+      arity: 2,
+      body: wasm
+        .call(SET_PAIR_HEAD_FX)
+        .args(
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
+        ),
+      isVoid: true,
+    },
+  ],
+  [
+    "set_tail",
+    {
+      arity: 2,
+      body: wasm
+        .call(SET_PAIR_TAIL_FX)
+        .args(
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0)),
+          wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(1)),
+        ),
+      isVoid: true,
+    },
+  ],
+  [
+    "bool",
+    {
+      arity: 1,
+      body: [
+        i32.const(TYPE_TAG.BOOL),
+        wasm.call(BOOLISE_FX).args(wasm.call(GET_LEX_ADDR_FX).args(i32.const(0), i32.const(0))),
+      ],
+      isVoid: false,
+    },
+  ],
 ]);
 
 type Binding = { name: string; tag: "local" | "nonlocal" };
@@ -152,10 +160,7 @@ function notImplemented(name: string): never {
   throw new Error(`BuilderGenerator: ${name} not implemented`);
 }
 
-export class BuilderGenerator implements BuilderVisitor<
-  WasmInstruction,
-  WasmNumeric
-> {
+export class BuilderGenerator implements BuilderVisitor<WasmInstruction, WasmNumeric> {
   private strings: [string, number][] = [];
   private heapPointer = 0;
 
@@ -182,7 +187,7 @@ export class BuilderGenerator implements BuilderVisitor<
   /** Returns the static TYPE_TAG if the annotation is exactly INT_BIT or BOOL_BIT, else null. */
   private resolveStaticTag(ann: AbstractValue | undefined): number | null {
     if (!ann) return null;
-    if (ann.sound.kinds === INT_BIT)  return TYPE_TAG.INT;
+    if (ann.sound.kinds === INT_BIT) return TYPE_TAG.INT;
     if (ann.sound.kinds === BOOL_BIT) return TYPE_TAG.BOOL;
     return null;
   }
@@ -241,14 +246,12 @@ export class BuilderGenerator implements BuilderVisitor<
   private getLexAddress(name: string): [number, number] {
     for (let i = this.environment.length - 1; i >= 0; i--) {
       const curr = this.environment[i];
-      const index = curr.findIndex((b) => b.name === name);
+      const index = curr.findIndex(b => b.name === name);
 
       if (index === -1) continue;
 
       if (curr[index].tag === "nonlocal") {
-        throw new Error(
-          `Name ${curr[index].name} is used prior to nonlocal declaration`,
-        );
+        throw new Error(`Name ${curr[index].name} is used prior to nonlocal declaration`);
       }
 
       return [this.environment.length - 1 - i, index];
@@ -260,15 +263,10 @@ export class BuilderGenerator implements BuilderVisitor<
     statements: StmtNS.Stmt[],
     parameters?: StmtNS.FunctionDef["parameters"],
   ): Binding[] {
-    const findInNestedBody = (
-      stmts: StmtNS.Stmt[],
-    ): (StmtNS.FunctionDef | StmtNS.Assign)[] => {
+    const findInNestedBody = (stmts: StmtNS.Stmt[]): (StmtNS.FunctionDef | StmtNS.Assign)[] => {
       const found: (StmtNS.FunctionDef | StmtNS.Assign)[] = [];
       for (const stmt of stmts) {
-        if (
-          stmt instanceof StmtNS.FunctionDef ||
-          stmt instanceof StmtNS.Assign
-        ) {
+        if (stmt instanceof StmtNS.FunctionDef || stmt instanceof StmtNS.Assign) {
           found.push(stmt);
         } else if (stmt instanceof StmtNS.If) {
           found.push(...findInNestedBody(stmt.body));
@@ -282,7 +280,7 @@ export class BuilderGenerator implements BuilderVisitor<
       return found;
     };
 
-    const bindings: Binding[] = findInNestedBody(statements).map((s) => {
+    const bindings: Binding[] = findInNestedBody(statements).map(s => {
       if (s instanceof StmtNS.FunctionDef) {
         return { name: s.name.lexeme, tag: "local" };
       }
@@ -295,20 +293,19 @@ export class BuilderGenerator implements BuilderVisitor<
     });
 
     statements
-      .filter((s) => s instanceof StmtNS.NonLocal)
-      .map((s) => s.name.lexeme)
-      .forEach((name) => {
+      .filter(s => s instanceof StmtNS.NonLocal)
+      .map(s => s.name.lexeme)
+      .forEach(name => {
         // nonlocal declaration must exist in a nonlocal scope
         if (
           !this.environment.find(
-            (frame, i) =>
-              i !== 0 && frame.find((binding) => binding.name === name),
+            (frame, i) => i !== 0 && frame.find(binding => binding.name === name),
           )
         )
           throw new Error(`No binding for nonlocal ${name} found!`);
 
         // cannot declare parameter name as nonlocal
-        if (parameters && parameters.map((p) => p.lexeme).includes(name)) {
+        if (parameters && parameters.map(p => p.lexeme).includes(name)) {
           throw new Error(`${name} is parameter and nonlocal`);
         }
 
@@ -324,8 +321,7 @@ export class BuilderGenerator implements BuilderVisitor<
       });
 
     return [
-      ...(parameters?.map((p) => ({ name: p.lexeme, tag: "local" as const })) ??
-        []),
+      ...(parameters?.map(p => ({ name: p.lexeme, tag: "local" as const })) ?? []),
       ...bindings,
     ];
   }
@@ -364,19 +360,14 @@ export class BuilderGenerator implements BuilderVisitor<
             i32.const(i),
             wasm
               .call(MAKE_CLOSURE_FX)
-              .args(
-                i32.const(tag),
-                i32.const(arity),
-                i32.const(arity),
-                global.get(CURR_ENV),
-              ),
+              .args(i32.const(tag), i32.const(arity), i32.const(arity), global.get(CURR_ENV)),
           );
       },
     );
 
     this.environment[0].push(...this.collectDeclarations(stmt.statements));
 
-    const body = stmt.statements.map((s) => this.visit(s));
+    const body = stmt.statements.map(s => this.visit(s));
 
     // Apply profiling instrumentation to user function bodies now that all
     // functions have been visited and their arities are known.
@@ -398,11 +389,7 @@ export class BuilderGenerator implements BuilderVisitor<
         const localIndex = fi - builtInFunctions.size;
         const arity = this.funcArities[fi] ?? 0;
         if (arity > 0) {
-          const instrBlock = buildProfilingInstrumentation(
-            localIndex,
-            arity,
-            profilingBaseAddr,
-          );
+          const instrBlock = buildProfilingInstrumentation(localIndex, arity, profilingBaseAddr);
           this.userFunctions[fi] = [...instrBlock, ...this.userFunctions[fi]];
         }
       }
@@ -411,14 +398,10 @@ export class BuilderGenerator implements BuilderVisitor<
     // this matches the format of drop in visitSimpleExpr
     const lastInstr = body.at(-1);
     const undroppedInstr =
-      lastInstr?.op === "drop" &&
-      lastInstr.value?.op === "drop" &&
-      lastInstr.value.value;
+      lastInstr?.op === "drop" && lastInstr.value?.op === "drop" && lastInstr.value.value;
 
     // collect all strings, native functions used and user functions
-    const strings = this.strings.map(([str, add]) =>
-      wasm.data(i32.const(add), str),
-    );
+    const strings = this.strings.map(([str, add]) => wasm.data(i32.const(add), str));
 
     const applyFunction = applyFuncFactory(this.userFunctions);
 
@@ -439,9 +422,7 @@ export class BuilderGenerator implements BuilderVisitor<
     // TODO: wasm-util does not provide a typed API for raw global exports.
     // This cast is required until the upstream library supports it.
     const extraExports = this.profilingEnabled
-      ? [
-          wasm.raw`(export "profiling_base" (global $_profiling_base))` as unknown as WasmExport,
-        ]
+      ? [wasm.raw`(export "profiling_base" (global $_profiling_base))` as unknown as WasmExport]
       : [];
 
     const moduleBuilder = wasm
@@ -473,9 +454,7 @@ export class BuilderGenerator implements BuilderVisitor<
 
             global.set(
               CURR_ENV,
-              wasm
-                .call(ALLOC_ENV_FX)
-                .args(i32.const(globalEnvLength), i32.const(0), i32.const(0)),
+              wasm.call(ALLOC_ENV_FX).args(i32.const(globalEnvLength), i32.const(0), i32.const(0)),
             ),
 
             ...builtInFuncsDeclarations,
@@ -531,20 +510,25 @@ export class BuilderGenerator implements BuilderVisitor<
     // the typeAnnotations block (needed by the modulo block below).
     const leftAnn = this.typeAnnotations?.get(expr.left);
     const rightAnn = this.typeAnnotations?.get(expr.right);
-    const leftIsIntOrBool = leftAnn !== undefined
-      && (leftAnn.sound.kinds === INT_BIT || leftAnn.sound.kinds === BOOL_BIT);
-    const rightIsIntOrBool = rightAnn !== undefined
-      && (rightAnn.sound.kinds === INT_BIT || rightAnn.sound.kinds === BOOL_BIT);
+    const leftIsIntOrBool =
+      leftAnn !== undefined &&
+      (leftAnn.sound.kinds === INT_BIT || leftAnn.sound.kinds === BOOL_BIT);
+    const rightIsIntOrBool =
+      rightAnn !== undefined &&
+      (rightAnn.sound.kinds === INT_BIT || rightAnn.sound.kinds === BOOL_BIT);
 
     if (this.typeAnnotations) {
       if (leftIsIntOrBool && rightIsIntOrBool) {
         // MOD is handled separately below for floor-mod semantics.
         if (opTag !== ARITHMETIC_OP_TAG.MOD) {
           const fastFx =
-            opTag === ARITHMETIC_OP_TAG.ADD ? FAST_INT_ADD_FX :
-            opTag === ARITHMETIC_OP_TAG.SUB ? FAST_INT_SUB_FX :
-            opTag === ARITHMETIC_OP_TAG.MUL ? FAST_INT_MUL_FX :
-            FAST_INT_DIV_FX;
+            opTag === ARITHMETIC_OP_TAG.ADD
+              ? FAST_INT_ADD_FX
+              : opTag === ARITHMETIC_OP_TAG.SUB
+                ? FAST_INT_SUB_FX
+                : opTag === ARITHMETIC_OP_TAG.MUL
+                  ? FAST_INT_MUL_FX
+                  : FAST_INT_DIV_FX;
           // The fast functions return (i32, i64) — same shape as ARITHMETIC_OP_FX.
           return wasm.call(fastFx).args(left, right);
         }
@@ -555,7 +539,7 @@ export class BuilderGenerator implements BuilderVisitor<
     // operands. For signed INT_BIT, use GENERIC_FLOOR_MOD_FX (Python floor semantics).
     if (opTag === ARITHMETIC_OP_TAG.MOD) {
       if (leftIsIntOrBool && rightIsIntOrBool) {
-        if (this.isNonNeg(leftAnn!) && this.isNonNeg(rightAnn!)) {
+        if (this.isNonNeg(leftAnn) && this.isNonNeg(rightAnn)) {
           return wasm.call(FAST_INT_MOD_FX).args(left, right);
         }
         return wasm.call(GENERIC_FLOOR_MOD_FX).args(left, right);
@@ -590,27 +574,32 @@ export class BuilderGenerator implements BuilderVisitor<
 
     const type = expr.operator.type;
     let opTag: number;
-    if (type === TokenType.DOUBLEEQUAL)       opTag = COMPARISON_OP_TAG.EQ;
-    else if (type === TokenType.NOTEQUAL)     opTag = COMPARISON_OP_TAG.NEQ;
-    else if (type === TokenType.LESS)         opTag = COMPARISON_OP_TAG.LT;
-    else if (type === TokenType.LESSEQUAL)    opTag = COMPARISON_OP_TAG.LTE;
-    else if (type === TokenType.GREATER)      opTag = COMPARISON_OP_TAG.GT;
+    if (type === TokenType.DOUBLEEQUAL) opTag = COMPARISON_OP_TAG.EQ;
+    else if (type === TokenType.NOTEQUAL) opTag = COMPARISON_OP_TAG.NEQ;
+    else if (type === TokenType.LESS) opTag = COMPARISON_OP_TAG.LT;
+    else if (type === TokenType.LESSEQUAL) opTag = COMPARISON_OP_TAG.LTE;
+    else if (type === TokenType.GREATER) opTag = COMPARISON_OP_TAG.GT;
     else if (type === TokenType.GREATEREQUAL) opTag = COMPARISON_OP_TAG.GTE;
     else throw new Error(`Unsupported comparison operator: ${type}`);
 
     // Phase 2: fast path — both operands have a static (INT_BIT or BOOL_BIT) type.
     // Skips COMPARISON_OP_FX's tag-check + br_table dispatch.
     if (this.typeAnnotations) {
-      const leftAnn  = this.typeAnnotations.get(expr.left);
+      const leftAnn = this.typeAnnotations.get(expr.left);
       const rightAnn = this.typeAnnotations.get(expr.right);
       if (this.resolveStaticTag(leftAnn) !== null && this.resolveStaticTag(rightAnn) !== null) {
         const fastFx =
-          opTag === COMPARISON_OP_TAG.EQ  ? FAST_INT_EQ_FX  :
-          opTag === COMPARISON_OP_TAG.NEQ ? FAST_INT_NEQ_FX :
-          opTag === COMPARISON_OP_TAG.LT  ? FAST_INT_LT_FX  :
-          opTag === COMPARISON_OP_TAG.LTE ? FAST_INT_LTE_FX :
-          opTag === COMPARISON_OP_TAG.GT  ? FAST_INT_GT_FX  :
-                                            FAST_INT_GTE_FX;
+          opTag === COMPARISON_OP_TAG.EQ
+            ? FAST_INT_EQ_FX
+            : opTag === COMPARISON_OP_TAG.NEQ
+              ? FAST_INT_NEQ_FX
+              : opTag === COMPARISON_OP_TAG.LT
+                ? FAST_INT_LT_FX
+                : opTag === COMPARISON_OP_TAG.LTE
+                  ? FAST_INT_LTE_FX
+                  : opTag === COMPARISON_OP_TAG.GT
+                    ? FAST_INT_GT_FX
+                    : FAST_INT_GTE_FX;
         return wasm.call(fastFx).args(left, right);
       }
     }
@@ -649,22 +638,26 @@ export class BuilderGenerator implements BuilderVisitor<
     // not a wasm function as it needs to short-circuit
     if (type === TokenType.AND) {
       // if x is false, then x else y
-      return wasm
-        .if(i64.eqz(wasm.call(BOOLISE_FX).args(left)))
-        .results(i32, i64)
-        .then(left)
-        // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
-        // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
-        .else(right) as unknown as WasmNumeric;
+      return (
+        wasm
+          .if(i64.eqz(wasm.call(BOOLISE_FX).args(left)))
+          .results(i32, i64)
+          .then(left)
+          // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
+          // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
+          .else(right) as unknown as WasmNumeric
+      );
     } else if (type === TokenType.OR) {
       // if x is false, then y else x
-      return wasm
-        .if(i64.eqz(wasm.call(BOOLISE_FX).args(left)))
-        .results(i32, i64)
-        .then(right)
-        // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
-        // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
-        .else(left) as unknown as WasmNumeric;
+      return (
+        wasm
+          .if(i64.eqz(wasm.call(BOOLISE_FX).args(left)))
+          .results(i32, i64)
+          .then(right)
+          // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
+          // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
+          .else(left) as unknown as WasmNumeric
+      );
     } else throw new Error(`Unsupported boolean binary operator: ${type}`);
   }
 
@@ -674,13 +667,15 @@ export class BuilderGenerator implements BuilderVisitor<
 
     const predicate = this.visit(expr.predicate);
 
-    return wasm
-      .if(i32.wrap_i64(wasm.call(BOOLISE_FX).args(predicate)))
-      .results(i32, i64)
-      .then(consequent)
-      // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
-      // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
-      .else(alternative) as unknown as WasmNumeric;
+    return (
+      wasm
+        .if(i32.wrap_i64(wasm.call(BOOLISE_FX).args(predicate)))
+        .results(i32, i64)
+        .then(consequent)
+        // wasm.if().results(i32, i64).then().else() produces the correct (i32 tag, i64 payload)
+        // shape at runtime, but the builder types the result as WasmInstruction. Cast is safe.
+        .else(alternative) as unknown as WasmNumeric
+    );
   }
 
   visitNoneExpr(expr: ExprNS.None): WasmNumeric {
@@ -699,16 +694,13 @@ export class BuilderGenerator implements BuilderVisitor<
   }
 
   visitLiteralExpr(expr: ExprNS.Literal): WasmNumeric {
-    if (typeof expr.value === "number")
-      return wasm.call(MAKE_FLOAT_FX).args(f64.const(expr.value));
+    if (typeof expr.value === "number") return wasm.call(MAKE_FLOAT_FX).args(f64.const(expr.value));
     else if (typeof expr.value === "boolean")
       return wasm.call(MAKE_BOOL_FX).args(i32.const(expr.value ? 1 : 0));
     else if (typeof expr.value === "string") {
       const str = expr.value;
       const len = str.length;
-      const toReturn = wasm
-        .call(MAKE_STRING_FX)
-        .args(i32.const(this.heapPointer), i32.const(len));
+      const toReturn = wasm.call(MAKE_STRING_FX).args(i32.const(this.heapPointer), i32.const(len));
 
       this.strings.push([str, this.heapPointer]);
       this.heapPointer += len;
@@ -723,9 +715,7 @@ export class BuilderGenerator implements BuilderVisitor<
     const real = expr.value.real;
     const imag = expr.value.imag;
 
-    return wasm
-      .call(MAKE_COMPLEX_FX)
-      .args(f64.const(real), f64.const(imag));
+    return wasm.call(MAKE_COMPLEX_FX).args(f64.const(real), f64.const(imag));
   }
 
   visitAssignStmt(stmt: StmtNS.Assign): WasmInstruction {
@@ -735,9 +725,7 @@ export class BuilderGenerator implements BuilderVisitor<
     const [depth, index] = this.getLexAddress(stmt.target.name.lexeme);
     const expression = this.visit(stmt.value);
 
-    return wasm
-      .call(SET_LEX_ADDR_FX)
-      .args(i32.const(depth), i32.const(index), expression);
+    return wasm.call(SET_LEX_ADDR_FX).args(i32.const(depth), i32.const(index), expression);
   }
 
   visitVariableExpr(expr: ExprNS.Variable): WasmNumeric {
@@ -757,15 +745,13 @@ export class BuilderGenerator implements BuilderVisitor<
 
     const newFrame = this.collectDeclarations(stmt.body, stmt.parameters);
 
-    if (tag >= 1 << 16)
-      throw new Error("Tag cannot be above 16-bit integer limit");
-    if (arity >= 1 << 8)
-      throw new Error("Arity cannot be above 8-bit integer limit");
+    if (tag >= 1 << 16) throw new Error("Tag cannot be above 16-bit integer limit");
+    if (arity >= 1 << 8) throw new Error("Arity cannot be above 8-bit integer limit");
     if (newFrame.length > 1 << 8)
       throw new Error("Environment length cannot be above 8-bit integer limit");
 
     this.environment.push(newFrame);
-    const body = stmt.body.map((s) => this.visit(s));
+    const body = stmt.body.map(s => this.visit(s));
     this.environment.pop();
 
     this.userFunctions[tag] = body;
@@ -777,12 +763,7 @@ export class BuilderGenerator implements BuilderVisitor<
         i32.const(index),
         wasm
           .call(MAKE_CLOSURE_FX)
-          .args(
-            i32.const(tag),
-            i32.const(arity),
-            i32.const(newFrame.length),
-            global.get(CURR_ENV),
-          ),
+          .args(i32.const(tag), i32.const(arity), i32.const(newFrame.length), global.get(CURR_ENV)),
       );
   }
 
@@ -799,10 +780,8 @@ export class BuilderGenerator implements BuilderVisitor<
     // other than parameters
     const newFrame = this.collectDeclarations([], expr.parameters);
 
-    if (tag >= 1 << 16)
-      throw new Error("Tag cannot be above 16-bit integer limit");
-    if (arity >= 1 << 8)
-      throw new Error("Arity cannot be above 8-bit integer limit");
+    if (tag >= 1 << 16) throw new Error("Tag cannot be above 16-bit integer limit");
+    if (arity >= 1 << 8) throw new Error("Arity cannot be above 8-bit integer limit");
     if (newFrame.length > 1 << 8)
       throw new Error("Environment length cannot be above 8-bit integer limit");
 
@@ -814,17 +793,12 @@ export class BuilderGenerator implements BuilderVisitor<
 
     return wasm
       .call(MAKE_CLOSURE_FX)
-      .args(
-        i32.const(tag),
-        i32.const(arity),
-        i32.const(newFrame.length),
-        global.get(CURR_ENV),
-      );
+      .args(i32.const(tag), i32.const(arity), i32.const(newFrame.length), global.get(CURR_ENV));
   }
 
   visitCallExpr(expr: ExprNS.Call): WasmRaw {
     const callee = this.visit(expr.callee);
-    const args = expr.args.map((arg) => this.visit(arg));
+    const args = expr.args.map(arg => this.visit(arg));
 
     // PRE_APPLY returns (1, 2) callee tag and value, (3) pointer to new environment
     // APPLY expects (1) pointer to return environment, (2, 3) callee tag and value
@@ -877,9 +851,7 @@ ${args.map(
 
     const currFrame = this.environment.at(-1);
     if (currFrame) {
-      const bindingIndex = currFrame.findIndex(
-        (binding) => binding.name === stmt.name.lexeme,
-      );
+      const bindingIndex = currFrame.findIndex(binding => binding.name === stmt.name.lexeme);
 
       if (bindingIndex >= 0) {
         currFrame.splice(bindingIndex, 1);
@@ -891,17 +863,15 @@ ${args.map(
 
   visitIfStmt(stmt: StmtNS.If): WasmInstruction {
     const condition = this.visit(stmt.condition);
-    const body = stmt.body.map((b) => this.visit(b));
-    const elseBody = stmt.elseBlock?.map((e) => this.visit(e));
+    const body = stmt.body.map(b => this.visit(b));
+    const elseBody = stmt.elseBlock?.map(e => this.visit(e));
 
     return elseBody
       ? wasm
           .if(i32.wrap_i64(wasm.call(BOOLISE_FX).args(condition)))
           .then(...body)
           .else(...elseBody)
-      : wasm
-          .if(i32.wrap_i64(wasm.call(BOOLISE_FX).args(condition)))
-          .then(...body);
+      : wasm.if(i32.wrap_i64(wasm.call(BOOLISE_FX).args(condition))).then(...body);
   }
 
   visitPassStmt(stmt: StmtNS.Pass): WasmInstruction {
@@ -912,18 +882,6 @@ ${args.map(
   visitMultiLambdaExpr(expr: ExprNS.MultiLambda): WasmNumeric {
     // TODO: register MultiLambda nodes when visitMultiLambdaExpr is implemented
     return notImplemented("visitMultiLambdaExpr");
-  }
-  visitIndentCreation(stmt: StmtNS.Indent): WasmInstruction {
-    return notImplemented("visitIndentCreation");
-  }
-  visitDedentCreation(stmt: StmtNS.Dedent): WasmInstruction {
-    return notImplemented("visitDedentCreation");
-  }
-  visitIndentStmt(stmt: StmtNS.Indent): WasmInstruction {
-    return notImplemented("visitIndentStmt");
-  }
-  visitDedentStmt(stmt: StmtNS.Dedent): WasmInstruction {
-    return notImplemented("visitDedentStmt");
   }
   visitAnnAssignStmt(stmt: StmtNS.AnnAssign): WasmInstruction {
     return notImplemented("visitAnnAssignStmt");
@@ -955,9 +913,6 @@ ${args.map(
   visitSubscriptExpr(expr: ExprNS.Subscript): WasmNumeric {
     return notImplemented("visitSubscriptExpr");
   }
-  visitStarredExpr(expr: ExprNS.Starred): WasmNumeric {
-    return notImplemented("visitStarredExpr");
-  }
 }
 
 /**
@@ -981,8 +936,7 @@ function buildProfilingInstrumentation(
   const tracked = Math.min(arity, MAX_PARAMS_TRACKED);
   const instrs: WasmInstruction[] = [];
   for (let pi = 0; pi < tracked; pi++) {
-    const byteOffset =
-      profilingBaseAddr + (funcIndex * MAX_PARAMS_TRACKED + pi) * 4;
+    const byteOffset = profilingBaseAddr + (funcIndex * MAX_PARAMS_TRACKED + pi) * 4;
     // GET_LEX_ADDR_FX returns (i32 tag, i64 value).
     // We push the store address, call to get both results, drop the i64,
     // then i32.store consumes address and the remaining i32 tag.

@@ -25,6 +25,7 @@ export default defineConfig([
       parserOptions: {
         projectService: {
           allowDefaultProject: ["src/tests/*.ts"],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 30,
         },
       },
     },

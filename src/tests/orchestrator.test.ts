@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SpecializationOrchestrator } from "../orchestration/orchestrator";
 import type { Specializer } from "../orchestration/orchestrator";
 import type { AnalysisResult } from "../specialization/types";

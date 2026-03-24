@@ -346,10 +346,7 @@ export const FAST_INT_MOD_FX = wasm
   // rem_s(x, y) = x - div_s(x, y) * y  (truncated, C-style)
   .body(
     i32.const(TYPE_TAG.INT),
-    i64.sub(
-      local.get("$x_val"),
-      i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val")),
-    ),
+    i64.sub(local.get("$x_val"), i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val"))),
   );
 
 // Python floor-division modulo for signed integer operands.
@@ -363,25 +360,20 @@ export const GENERIC_FLOOR_MOD_FX = wasm
   .results(i32, i64)
   .locals({ $rem: i64 })
   .body(
-    local.set("$rem",
-      i64.sub(
-        local.get("$x_val"),
-        i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val"))
-      )
+    local.set(
+      "$rem",
+      i64.sub(local.get("$x_val"), i64.mul(i64.div_s(local.get("$x_val"), local.get("$y_val")), local.get("$y_val"))),
     ),
     // Floor correction: if rem != 0 and sign(rem) != sign(divisor), add divisor.
     // i64.ne returns i32 (0 or 1) — no wrapping needed for i32.and.
-    wasm.if(
-      i32.and(
-        i64.ne(local.get("$rem"), i64.const(0)),
-        i64.ne(
-          i64.shr_s(local.get("$rem"), i64.const(63)),
-          i64.shr_s(local.get("$y_val"), i64.const(63))
-        )
+    wasm
+      .if(
+        i32.and(
+          i64.ne(local.get("$rem"), i64.const(0)),
+          i64.ne(i64.shr_s(local.get("$rem"), i64.const(63)), i64.shr_s(local.get("$y_val"), i64.const(63))),
+        ),
       )
-    ).then(
-      local.set("$rem", i64.add(local.get("$rem"), local.get("$y_val")))
-    ),
+      .then(local.set("$rem", i64.add(local.get("$rem"), local.get("$y_val")))),
     wasm.return(i32.const(TYPE_TAG.INT), local.get("$rem")),
   );
 

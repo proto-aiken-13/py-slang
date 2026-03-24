@@ -15,20 +15,26 @@ function buildWat(src: string, profiling = false): string {
 
 describe("BuilderGenerator profiling instrumentation", () => {
   it("emits profiling_base global when profiling is enabled", () => {
-    const wat = buildWat(`
+    const wat = buildWat(
+      `
 def foo(x):
     return x
 foo(1)
-`, true);
+`,
+      true,
+    );
     expect(wat).toContain("profiling_base");
   });
 
   it("emits memory.fill for profiling region initialization in $main", () => {
-    const wat = buildWat(`
+    const wat = buildWat(
+      `
 def bar(y):
     return y
 bar(2)
-`, true);
+`,
+      true,
+    );
     expect(wat).toContain("memory.fill");
   });
 

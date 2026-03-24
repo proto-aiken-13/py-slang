@@ -1,5 +1,6 @@
 import { createBackend } from "../backend/config";
 import { SVMLBackend } from "../vm/svml-backend";
+import { CSEBackend } from "../cse-machine/cse-backend";
 import { WasmBackend } from "../wasm-compiler/wasm-backend";
 import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
 
@@ -19,8 +20,9 @@ describe("createBackend", () => {
     expect(backend).toBeInstanceOf(SVMLBackend);
   });
 
-  test("cse backend throws not implemented", () => {
-    expect(() => createBackend({ backend: "cse" })).toThrow("not implemented");
+  test("cse backend returns CSEBackend instance", () => {
+    const backend = createBackend({ backend: "cse" });
+    expect(backend).toBeInstanceOf(CSEBackend);
   });
 
   test("wasm backend returns WasmBackend instance", () => {

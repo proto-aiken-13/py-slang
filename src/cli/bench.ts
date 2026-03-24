@@ -52,10 +52,7 @@ async function benchmark(
 }
 
 /** Benchmark wasm-cold: new WasmBackend per run forces full recompilation every time. */
-async function benchmarkWasmCold(
-  ast: StmtNS.FileInput,
-  runs: number,
-): Promise<BenchResult> {
+async function benchmarkWasmCold(ast: StmtNS.FileInput, runs: number): Promise<BenchResult> {
   const emptyEnvs = new Map() as FunctionEnvironments;
   const times: number[] = [];
 
@@ -88,7 +85,11 @@ function main() {
     .description("Benchmark py-slang backends")
     .argument("<input-file>", "Python file to benchmark")
     .option("-n, --runs <number>", "Number of runs per backend", "10")
-    .option("--backends <list>", "Comma-separated backends to test", "svml-jit,svml-nojit,wasm,wasm-jit")
+    .option(
+      "--backends <list>",
+      "Comma-separated backends to test",
+      "svml-jit,svml-nojit,wasm,wasm-jit",
+    )
     .action(async (inputFile: string, opts: { runs: string; backends: string }) => {
       if (!fs.existsSync(inputFile)) {
         console.error(`Error: File '${inputFile}' not found`);
@@ -105,7 +106,7 @@ function main() {
 
       // Parse once (shared across backends)
       const script = code + "\n";
-      const ast = parse(script) as StmtNS.FileInput;
+      const ast = parse(script);
       analyze(ast, script, 4);
       const emptyEnvs = new Map() as FunctionEnvironments;
 
@@ -120,7 +121,9 @@ function main() {
           process.stdout.write(`  ${name}: running...`);
           const result = await benchmarkWasmCold(ast, runs);
           results.push(result);
-          process.stdout.write(`\r  ${name}: ${result.avgMs}ms avg (${result.minMs}-${result.maxMs}ms range)\n`);
+          process.stdout.write(
+            `\r  ${name}: ${result.avgMs}ms avg (${result.minMs}-${result.maxMs}ms range)\n`,
+          );
           continue;
         }
 
@@ -147,7 +150,9 @@ function main() {
         process.stdout.write(`  ${name}: running...`);
         const result = await benchmark(name, backend, ast, runs);
         results.push(result);
-        process.stdout.write(`\r  ${name}: ${result.avgMs}ms avg (${result.minMs}-${result.maxMs}ms range)\n`);
+        process.stdout.write(
+          `\r  ${name}: ${result.avgMs}ms avg (${result.minMs}-${result.maxMs}ms range)\n`,
+        );
       }
 
       if (results.length === 0) return;
@@ -158,12 +163,14 @@ function main() {
       console.log("------------- | -------- | -------- | -------- | ----");
       for (const r of results) {
         const name = r.backend.padEnd(13);
-        console.log(`${name} | ${String(r.avgMs).padStart(8)} | ${String(r.minMs).padStart(8)} | ${String(r.maxMs).padStart(8)} | ${r.runs}`);
+        console.log(
+          `${name} | ${String(r.avgMs).padStart(8)} | ${String(r.minMs).padStart(8)} | ${String(r.maxMs).padStart(8)} | ${r.runs}`,
+        );
       }
 
       if (results.length >= 2) {
-        const fastest = results.reduce((a, b) => a.avgMs < b.avgMs ? a : b);
-        const slowest = results.reduce((a, b) => a.avgMs > b.avgMs ? a : b);
+        const fastest = results.reduce((a, b) => (a.avgMs < b.avgMs ? a : b));
+        const slowest = results.reduce((a, b) => (a.avgMs > b.avgMs ? a : b));
         const speedup = Math.round((slowest.avgMs / fastest.avgMs) * 100) / 100;
         console.log(`\n${fastest.backend} is ${speedup}x faster than ${slowest.backend}`);
       }

@@ -8,7 +8,8 @@ export const NULL_BIT = 8;
 export const CLOSURE_BIT = 16;
 export const FLOAT_BIT = 32;
 export const COMPLEX_BIT = 64;
-export const ALL_KINDS_MASK = INT_BIT | BOOL_BIT | STR_BIT | NULL_BIT | CLOSURE_BIT | FLOAT_BIT | COMPLEX_BIT;
+export const ALL_KINDS_MASK =
+  INT_BIT | BOOL_BIT | STR_BIT | NULL_BIT | CLOSURE_BIT | FLOAT_BIT | COMPLEX_BIT;
 
 // Power-set bitmask: join = OR, meet = AND
 export const enum IntRef {

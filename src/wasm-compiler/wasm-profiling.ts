@@ -1,6 +1,11 @@
 import { TYPE_TAG } from "./constants";
 import {
-  integer, boolean as boolVal, stringValue, nullValue, closureValue, TOP,
+  integer,
+  boolean as boolVal,
+  stringValue,
+  nullValue,
+  closureValue,
+  TOP,
 } from "../types/lattice-ops";
 import type { AbstractValue } from "../types/abstract-value";
 import type { FunctionProfile } from "../specialization/types";
@@ -12,10 +17,10 @@ export const MAX_PARAMS_TRACKED = 8;
  * Sentinel byte value written to every byte of the observation buffer by memory.fill.
  * When all 4 bytes of a word are 0xFF, the Uint32 word value is SENTINEL_WORD.
  */
-export const PROFILING_SENTINEL = 0xFF;
+export const PROFILING_SENTINEL = 0xff;
 
 /** Uint32 word value of an uninitialised cell (4 × PROFILING_SENTINEL bytes). */
-const SENTINEL_WORD = 0xFFFFFFFF;
+const SENTINEL_WORD = 0xffffffff;
 
 /**
  * Convert a Wasm TYPE_TAG integer to an AbstractValue for profiling purposes.
@@ -23,13 +28,20 @@ const SENTINEL_WORD = 0xFFFFFFFF;
  */
 export function tagToAbstractValue(tag: number): AbstractValue | null {
   switch (tag) {
-    case TYPE_TAG.INT:     return integer();
-    case TYPE_TAG.FLOAT:   return TOP;
-    case TYPE_TAG.BOOL:    return boolVal();
-    case TYPE_TAG.STRING:  return stringValue();
-    case TYPE_TAG.NONE:    return nullValue();
-    case TYPE_TAG.CLOSURE: return closureValue();
-    default:               return null;
+    case TYPE_TAG.INT:
+      return integer();
+    case TYPE_TAG.FLOAT:
+      return TOP;
+    case TYPE_TAG.BOOL:
+      return boolVal();
+    case TYPE_TAG.STRING:
+      return stringValue();
+    case TYPE_TAG.NONE:
+      return nullValue();
+    case TYPE_TAG.CLOSURE:
+      return closureValue();
+    default:
+      return null;
   }
 }
 

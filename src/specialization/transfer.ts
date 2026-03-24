@@ -8,7 +8,13 @@ import {
   FLOAT_BIT,
   COMPLEX_BIT,
 } from "../types/abstract-value";
-import { TOP, integer, boolean, floatValue, complexValue as complexVal } from "../types/lattice-ops";
+import {
+  TOP,
+  integer,
+  boolean,
+  floatValue,
+  complexValue as complexVal,
+} from "../types/lattice-ops";
 
 // ========================================================================
 // Sign arithmetic transfer functions (operate on IntRef bitmasks)
@@ -204,12 +210,23 @@ export function transferBinaryOp(
     const rRef = rIsFloat ? right.sound.floatRef : right.sound.intRef;
     let resultRef: IntRef;
     switch (op) {
-      case "+": resultRef = addSigns(lRef, rRef); break;
-      case "-": resultRef = subSigns(lRef, rRef); break;
-      case "*": resultRef = mulSigns(lRef, rRef); break;
-      case "//": resultRef = divSigns(lRef, rRef); break;
-      case "%": resultRef = modSigns(lRef, rRef); break;
-      default: return TOP;
+      case "+":
+        resultRef = addSigns(lRef, rRef);
+        break;
+      case "-":
+        resultRef = subSigns(lRef, rRef);
+        break;
+      case "*":
+        resultRef = mulSigns(lRef, rRef);
+        break;
+      case "//":
+        resultRef = divSigns(lRef, rRef);
+        break;
+      case "%":
+        resultRef = modSigns(lRef, rRef);
+        break;
+      default:
+        return TOP;
     }
     return floatValue(resultRef);
   }
@@ -222,12 +239,23 @@ export function transferBinaryOp(
 
   let resultRef: IntRef;
   switch (op) {
-    case "+": resultRef = addSigns(lRef, rRef); break;
-    case "-": resultRef = subSigns(lRef, rRef); break;
-    case "*": resultRef = mulSigns(lRef, rRef); break;
-    case "//": resultRef = divSigns(lRef, rRef); break;
-    case "%": resultRef = modSigns(lRef, rRef); break;
-    default: return TOP;
+    case "+":
+      resultRef = addSigns(lRef, rRef);
+      break;
+    case "-":
+      resultRef = subSigns(lRef, rRef);
+      break;
+    case "*":
+      resultRef = mulSigns(lRef, rRef);
+      break;
+    case "//":
+      resultRef = divSigns(lRef, rRef);
+      break;
+    case "%":
+      resultRef = modSigns(lRef, rRef);
+      break;
+    default:
+      return TOP;
   }
   return integer(resultRef);
 }
@@ -261,11 +289,20 @@ export function transferCompare(
     const rRef = right.sound.intRef;
     let resultRef: BoolRef;
     switch (op) {
-      case ">": resultRef = gtSigns(lRef, rRef); break;
-      case "<": resultRef = ltSigns(lRef, rRef); break;
-      case ">=": resultRef = geSigns(lRef, rRef); break;
-      case "<=": resultRef = leSigns(lRef, rRef); break;
-      default: return boolean(3 as BoolRef);
+      case ">":
+        resultRef = gtSigns(lRef, rRef);
+        break;
+      case "<":
+        resultRef = ltSigns(lRef, rRef);
+        break;
+      case ">=":
+        resultRef = geSigns(lRef, rRef);
+        break;
+      case "<=":
+        resultRef = leSigns(lRef, rRef);
+        break;
+      default:
+        return boolean(3 as BoolRef);
     }
     return boolean(resultRef);
   }
@@ -276,11 +313,20 @@ export function transferCompare(
     const rRef = right.sound.floatRef;
     let resultRef: BoolRef;
     switch (op) {
-      case ">": resultRef = gtSigns(lRef, rRef); break;
-      case "<": resultRef = ltSigns(lRef, rRef); break;
-      case ">=": resultRef = geSigns(lRef, rRef); break;
-      case "<=": resultRef = leSigns(lRef, rRef); break;
-      default: return boolean(3 as BoolRef);
+      case ">":
+        resultRef = gtSigns(lRef, rRef);
+        break;
+      case "<":
+        resultRef = ltSigns(lRef, rRef);
+        break;
+      case ">=":
+        resultRef = geSigns(lRef, rRef);
+        break;
+      case "<=":
+        resultRef = leSigns(lRef, rRef);
+        break;
+      default:
+        return boolean(3 as BoolRef);
     }
     return boolean(resultRef);
   }
@@ -291,11 +337,20 @@ export function transferCompare(
     const rRef = rk === FLOAT_BIT ? right.sound.floatRef : right.sound.intRef;
     let resultRef: BoolRef;
     switch (op) {
-      case ">": resultRef = gtSigns(lRef, rRef); break;
-      case "<": resultRef = ltSigns(lRef, rRef); break;
-      case ">=": resultRef = geSigns(lRef, rRef); break;
-      case "<=": resultRef = leSigns(lRef, rRef); break;
-      default: return boolean(3 as BoolRef);
+      case ">":
+        resultRef = gtSigns(lRef, rRef);
+        break;
+      case "<":
+        resultRef = ltSigns(lRef, rRef);
+        break;
+      case ">=":
+        resultRef = geSigns(lRef, rRef);
+        break;
+      case "<=":
+        resultRef = leSigns(lRef, rRef);
+        break;
+      default:
+        return boolean(3 as BoolRef);
     }
     return boolean(resultRef);
   }

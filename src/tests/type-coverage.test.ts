@@ -1,5 +1,11 @@
 import {
-  INT_BIT, FLOAT_BIT, COMPLEX_BIT, BOOL_BIT, STR_BIT, NULL_BIT, CLOSURE_BIT,
+  INT_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
+  BOOL_BIT,
+  STR_BIT,
+  NULL_BIT,
+  CLOSURE_BIT,
 } from "../types/abstract-value";
 import type { PythonType } from "../types/python-type";
 
@@ -10,7 +16,16 @@ import type { PythonType } from "../types/python-type";
  * This test ensures PythonType and AbstractValue cover all of them.
  */
 describe("Type system coverage", () => {
-  const SPEC_TYPES = ["int", "float", "complex", "bool", "str", "none", "function", "list"] as const;
+  const SPEC_TYPES = [
+    "int",
+    "float",
+    "complex",
+    "bool",
+    "str",
+    "none",
+    "function",
+    "list",
+  ] as const;
 
   test("PythonType has a tag for every spec type", () => {
     const values: PythonType[] = [

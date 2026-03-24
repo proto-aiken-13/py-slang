@@ -18,7 +18,7 @@ describe("decodeObservations", () => {
   }
 
   /** Sentinel word value — equivalent to Wasm memory.fill(base, 0xFF, ...) */
-  const SENTINEL = 0xFFFFFFFF;
+  const SENTINEL = 0xffffffff;
 
   it("decodes INT tag for param 0 of func 0", () => {
     const base = 65_536 - 1 * MAX_PARAMS_TRACKED * 4; // 1 function
@@ -45,7 +45,7 @@ describe("decodeObservations", () => {
   it("handles two functions with different arities", () => {
     const base = 65_536 - 2 * MAX_PARAMS_TRACKED * 4; // 2 functions
     const cells = new Array(2 * MAX_PARAMS_TRACKED).fill(SENTINEL);
-    cells[0] = TYPE_TAG.INT;  // func 0, param 0
+    cells[0] = TYPE_TAG.INT; // func 0, param 0
     cells[MAX_PARAMS_TRACKED + 0] = TYPE_TAG.BOOL; // func 1, param 0
     cells[MAX_PARAMS_TRACKED + 1] = TYPE_TAG.STRING; // func 1, param 1
     const mem = makeMemory(base, cells);
@@ -69,7 +69,7 @@ describe("decodeObservations", () => {
   });
 
   it("tagToAbstractValue maps FLOAT to TOP and NONE to nullValue", () => {
-    expect(tagToAbstractValue(TYPE_TAG.FLOAT)).toBe(TOP);  // TOP is a singleton
+    expect(tagToAbstractValue(TYPE_TAG.FLOAT)).toBe(TOP); // TOP is a singleton
     expect(tagToAbstractValue(TYPE_TAG.NONE)).not.toBeNull();
     expect(tagToAbstractValue(TYPE_TAG.COMPLEX)).toBeNull();
   });

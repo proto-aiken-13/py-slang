@@ -21,7 +21,7 @@ const noopConsole: WasmConsoleImports = {
 
 describe("compileFromAST", () => {
   it("compiles integer expression and returns correct tag+payload", async () => {
-    const ast = parse("1 + 2\n") as StmtNS.FileInput;
+    const ast = parse("1 + 2\n");
     const memory = new WebAssembly.Memory({ initial: 1 });
     const { tag, payload } = await compileFromAST(ast, memory, noopConsole);
     expect(tag).toBe(TYPE_TAG.INT);
@@ -33,7 +33,7 @@ describe("compileFromAST", () => {
     // which is the return value of print (None, tag=6). So tag=TYPE_TAG.NONE, not -1.
     // tag=-1 is only produced when $main truly has no return type (empty program).
     const captured: string[] = [];
-    const ast = parse('print("hello")\n') as StmtNS.FileInput;
+    const ast = parse('print("hello")\n');
     const memory = new WebAssembly.Memory({ initial: 1 });
     const cons: WasmConsoleImports = {
       ...noopConsole,
@@ -53,38 +53,53 @@ describe("WasmAdapter.toPython", () => {
   const adapter = new WasmAdapter();
 
   it("decodes INT", () => {
-    expect(adapter.toPython({
-      tag: TYPE_TAG.INT, payload: 42n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "int", value: 42 });
+    expect(
+      adapter.toPython({
+        tag: TYPE_TAG.INT,
+        payload: 42n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "int", value: 42 });
   });
 
   it("decodes negative INT", () => {
-    expect(adapter.toPython({
-      tag: TYPE_TAG.INT, payload: -1n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "int", value: -1 });
+    expect(
+      adapter.toPython({
+        tag: TYPE_TAG.INT,
+        payload: -1n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "int", value: -1 });
   });
 
   it("decodes BOOL true", () => {
-    expect(adapter.toPython({
-      tag: TYPE_TAG.BOOL, payload: 1n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "bool", value: true });
+    expect(
+      adapter.toPython({
+        tag: TYPE_TAG.BOOL,
+        payload: 1n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "bool", value: true });
   });
 
   it("decodes BOOL false", () => {
-    expect(adapter.toPython({
-      tag: TYPE_TAG.BOOL, payload: 0n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "bool", value: false });
+    expect(
+      adapter.toPython({
+        tag: TYPE_TAG.BOOL,
+        payload: 0n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "bool", value: false });
   });
 
   it("decodes NONE", () => {
-    expect(adapter.toPython({
-      tag: TYPE_TAG.NONE, payload: 0n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "none" });
+    expect(
+      adapter.toPython({
+        tag: TYPE_TAG.NONE,
+        payload: 0n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "none" });
   });
 
   it("decodes STRING from wasm memory", () => {
@@ -93,15 +108,20 @@ describe("WasmAdapter.toPython", () => {
     const ptr = 64;
     new Uint8Array(memory.buffer).set(encoded, ptr);
     const payload = (BigInt(ptr) << 32n) | BigInt(encoded.length);
-    expect(adapter.toPython({ tag: TYPE_TAG.STRING, payload, memory }))
-      .toEqual({ tag: "str", value: "hello" });
+    expect(adapter.toPython({ tag: TYPE_TAG.STRING, payload, memory })).toEqual({
+      tag: "str",
+      value: "hello",
+    });
   });
 
   it("decodes unknown tag (-1 sentinel) as none", () => {
-    expect(adapter.toPython({
-      tag: -1, payload: 0n,
-      memory: new WebAssembly.Memory({ initial: 1 }),
-    })).toEqual({ tag: "none" });
+    expect(
+      adapter.toPython({
+        tag: -1,
+        payload: 0n,
+        memory: new WebAssembly.Memory({ initial: 1 }),
+      }),
+    ).toEqual({ tag: "none" });
   });
 });
 
@@ -109,33 +129,33 @@ describe("WasmBackend.run", () => {
   const backend = new WasmBackend();
 
   it("returns integer value", async () => {
-    const ast = parse("42\n") as StmtNS.FileInput;
+    const ast = parse("42\n");
     const result = await backend.run(ast, emptyEnvs);
     expect(result.value).toEqual({ tag: "int", value: 42 });
     expect(result.stderr).toBe("");
   });
 
   it("returns boolean value", async () => {
-    const ast = parse("True\n") as StmtNS.FileInput;
+    const ast = parse("True\n");
     const result = await backend.run(ast, emptyEnvs);
     expect(result.value).toEqual({ tag: "bool", value: true });
   });
 
   it("returns none for statement-only program", async () => {
-    const ast = parse("x = 1\n") as StmtNS.FileInput;
+    const ast = parse("x = 1\n");
     const result = await backend.run(ast, emptyEnvs);
     expect(result.value).toEqual({ tag: "none" });
   });
 
   it("captures print() output in stdout", async () => {
-    const ast = parse('print("hello")\n') as StmtNS.FileInput;
+    const ast = parse('print("hello")\n');
     const result = await backend.run(ast, emptyEnvs);
     expect(result.stdout).toBe("hello");
     expect(result.value).toEqual({ tag: "none" });
   });
 
   it("captures multiple print() calls separated by newline", async () => {
-    const ast = parse('print("a")\nprint("b")\n') as StmtNS.FileInput;
+    const ast = parse('print("a")\nprint("b")\n');
     const result = await backend.run(ast, emptyEnvs);
     expect(result.stdout).toBe("a\nb");
   });
@@ -143,7 +163,7 @@ describe("WasmBackend.run", () => {
   it("populates stderr when wasm runtime error occurs", async () => {
     // Calling a non-function triggers log_error(CALL_NOT_FX) + wasm unreachable trap.
     // stderr will contain both the log_error message and the RuntimeError message.
-    const ast = parse("x = 1\nx(2)\n") as StmtNS.FileInput;
+    const ast = parse("x = 1\nx(2)\n");
     const result = await backend.run(ast, emptyEnvs);
     expect(result.stderr).not.toBe("");
     expect(result.value).toEqual({ tag: "none" });

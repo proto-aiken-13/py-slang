@@ -30,7 +30,14 @@ import {
   stringValue,
   TOP,
 } from "../types/lattice-ops";
-import { IntRef, BoolRef, INT_BIT, BOOL_BIT, FLOAT_BIT, COMPLEX_BIT } from "../types/abstract-value";
+import {
+  IntRef,
+  BoolRef,
+  INT_BIT,
+  BOOL_BIT,
+  FLOAT_BIT,
+  COMPLEX_BIT,
+} from "../types/abstract-value";
 
 describe("transferBinaryOp", () => {
   test("pos + pos = pos", () => {

@@ -36,20 +36,10 @@ export async function compileToWasmAndRun(code: string) {
       log: console.log,
       log_complex: (real: number, imag: number) =>
         console.log(`${real} ${imag >= 0 ? "+" : "-"} ${Math.abs(imag)}j`),
-      log_bool: (value: bigint) =>
-        console.log(value === BigInt(0) ? "False" : "True"),
+      log_bool: (value: bigint) => console.log(value === BigInt(0) ? "False" : "True"),
       log_string: (offset: number, length: number) =>
-        console.log(
-          new TextDecoder("utf8").decode(
-            new Uint8Array(memory.buffer, offset, length),
-          ),
-        ),
-      log_closure: (
-        tag: number,
-        arity: number,
-        envSize: number,
-        parentEnv: number,
-      ) =>
+        console.log(new TextDecoder("utf8").decode(new Uint8Array(memory.buffer, offset, length))),
+      log_closure: (tag: number, arity: number, envSize: number, parentEnv: number) =>
         console.log(
           `Closure (tag: ${tag}, arity: ${arity}, envSize: ${envSize}, parentEnv: ${parentEnv})`,
         ),
@@ -90,9 +80,10 @@ export async function buildWasmModule(
   numUserFunctions: number;
 }> {
   // The instanceof guard already handles the WeakMap branch, so the cast below is safe.
-  const opts = optionsOrAnnotations instanceof WeakMap
-    ? { typeAnnotations: optionsOrAnnotations, profiling: false }
-    : (optionsOrAnnotations ?? {});
+  const opts =
+    optionsOrAnnotations instanceof WeakMap
+      ? { typeAnnotations: optionsOrAnnotations, profiling: false }
+      : (optionsOrAnnotations ?? {});
   const { typeAnnotations, profiling = false } = opts as {
     typeAnnotations?: WeakMap<object, AbstractValue>;
     profiling?: boolean;

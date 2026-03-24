@@ -40,9 +40,7 @@ export default class PyEvaluator extends BasicEvaluator {
         this.conductor.sendOutput(`Error: ${result.error.message}`);
       }
     } catch (error) {
-      this.conductor.sendOutput(
-        `Error: ${error instanceof Error ? error.message : error}`
-      );
+      this.conductor.sendOutput(`Error: ${error instanceof Error ? error.message : error}`);
     }
   }
 }

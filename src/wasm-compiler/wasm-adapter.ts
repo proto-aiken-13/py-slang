@@ -39,9 +39,7 @@ export class WasmAdapter implements BackendAdapter<WasmNative> {
         const len = Number(payload & 0xffffffffn);
         return {
           tag: "str",
-          value: new TextDecoder("utf-8").decode(
-            new Uint8Array(memory.buffer, ptr, len),
-          ),
+          value: new TextDecoder("utf-8").decode(new Uint8Array(memory.buffer, ptr, len)),
         };
       }
 
@@ -70,6 +68,10 @@ export class WasmAdapter implements BackendAdapter<WasmNative> {
       case "function":
         return TOP;
       case "list":
+        return TOP;
+      case "float":
+        return TOP;
+      case "complex":
         return TOP;
     }
   }

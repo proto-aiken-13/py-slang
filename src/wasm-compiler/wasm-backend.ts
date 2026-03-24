@@ -41,7 +41,7 @@ export class WasmBackend implements Backend {
 
     const consoleImports: WasmConsoleImports = {
       log: (...args) => stdout.push(String(args[0])),
-      log_bool: (value) => stdout.push(value === 0n ? "False" : "True"),
+      log_bool: value => stdout.push(value === 0n ? "False" : "True"),
       log_string: (offset, length) => stdout.push(decodeString(offset, length)),
       log_complex: (real, imag) =>
         stdout.push(`${real} ${imag >= 0 ? "+" : "-"} ${Math.abs(imag)}j`),
@@ -51,7 +51,7 @@ export class WasmBackend implements Backend {
           `Closure (tag: ${tag}, arity: ${arity}, envSize: ${envSize}, parentEnv: ${parentEnv})`,
         ),
       log_pair: () => stdout.push("Pair"),
-      log_error: (tag) => {
+      log_error: tag => {
         // Wasm runtime errors go to stderr. Note: log_error is always followed by
         // wasm `unreachable`, so a WebAssembly.RuntimeError will also be caught
         // below and appended to stderr. Both messages will appear in stderr.
@@ -77,11 +77,17 @@ export class WasmBackend implements Backend {
         this.lastAST = ast;
       }
 
-      const { tag, payload, instance } = await runWasmModule(this.cachedModule, memory, consoleImports);
+      const { tag, payload, instance } = await runWasmModule(
+        this.cachedModule,
+        memory,
+        consoleImports,
+      );
 
       // Decode profiling observations if profiling is enabled
       if (this.options?.profiling && this.cachedBindings) {
-        const profilingBaseGlobal = instance.exports.profiling_base as WebAssembly.Global | undefined;
+        const profilingBaseGlobal = instance.exports.profiling_base as
+          | WebAssembly.Global
+          | undefined;
         if (profilingBaseGlobal) {
           const profilingBase = profilingBaseGlobal.value as number;
           const rawObs = decodeObservations(

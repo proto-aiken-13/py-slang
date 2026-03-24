@@ -84,7 +84,12 @@ export function leq(a: AbstractValue, b: AbstractValue): boolean {
 
 // ---- Frozen singletons ----
 
-function makeSingleton(kinds: number, intRef: IntRef, boolRef: BoolRef, floatRef: IntRef = 0 as IntRef): AbstractValue {
+function makeSingleton(
+  kinds: number,
+  intRef: IntRef,
+  boolRef: BoolRef,
+  floatRef: IntRef = 0 as IntRef,
+): AbstractValue {
   return Object.freeze({ sound: Object.freeze({ kinds, intRef, boolRef, floatRef }) });
 }
 
@@ -103,7 +108,12 @@ for (let r = 0; r < 8; r++) {
   FLOAT_SINGLETONS[r] = makeSingleton(FLOAT_BIT, 0 as IntRef, 0 as BoolRef, r as IntRef);
 }
 
-export const TOP: AbstractValue = makeSingleton(ALL_KINDS_MASK, 7 as IntRef, 3 as BoolRef, 7 as IntRef);
+export const TOP: AbstractValue = makeSingleton(
+  ALL_KINDS_MASK,
+  7 as IntRef,
+  3 as BoolRef,
+  7 as IntRef,
+);
 export const BOTTOM: AbstractValue = makeSingleton(0, 0 as IntRef, 0 as BoolRef);
 export const STRING_VAL: AbstractValue = makeSingleton(STR_BIT, 0 as IntRef, 0 as BoolRef);
 export const NULL_VAL: AbstractValue = makeSingleton(NULL_BIT, 0 as IntRef, 0 as BoolRef);

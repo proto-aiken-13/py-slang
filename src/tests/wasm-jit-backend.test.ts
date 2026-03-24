@@ -5,7 +5,7 @@ import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
 
 function parseCode(code: string): StmtNS.FileInput {
   const src = code.endsWith("\n") ? code : code + "\n";
-  return parse(src) as StmtNS.FileInput;
+  return parse(src);
 }
 
 async function runJIT(code: string): Promise<number | boolean | null> {
@@ -15,10 +15,15 @@ async function runJIT(code: string): Promise<number | boolean | null> {
   if (result.stderr) throw new Error(`wasm-jit stderr: ${result.stderr}`);
   const v = result.value;
   switch (v.tag) {
-    case "int":  return v.value;
-    case "bool": return v.value;
-    case "none": return null;
-    default:     throw new Error(`unhandled tag: ${(v as any).tag}`);
+    case "int":
+      return v.value;
+    case "bool":
+      return v.value;
+    case "none":
+      return null;
+    default:
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      throw new Error(`unhandled tag: ${(v as any).tag}`);
   }
 }
 
