@@ -1,7 +1,7 @@
 import { ExprNS } from "../ast-types";
-import { Context } from "../cse-machine/context";
-import { Value } from "../cse-machine/stash";
-import { operatorTranslator } from "../cse-machine/types";
+import { Context } from "../backends/cse/context";
+import { Value } from "../backends/cse/stash";
+import { operatorTranslator } from "../backends/cse/types";
 import { Token } from "../tokenizer";
 import { typeTranslator } from "../utils/type-names";
 

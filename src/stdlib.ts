@@ -1,8 +1,8 @@
 import { erf, gamma, lgamma } from "mathjs";
-import { Context } from "./cse-machine/context";
-import { ControlItem } from "./cse-machine/control";
-import { handleRuntimeError } from "./cse-machine/error";
-import { Value } from "./cse-machine/stash";
+import { Context } from "./backends/cse/context";
+import { ControlItem } from "./backends/cse/control";
+import { handleRuntimeError } from "./backends/cse/error";
+import { Value } from "./backends/cse/stash";
 import {
   MissingRequiredPositionalError,
   SublanguageError,

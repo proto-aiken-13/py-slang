@@ -1,5 +1,5 @@
-import { createBackend } from "../backend/config";
-import { SVMLBackend } from "../vm/svml-backend";
+import { createBackend } from "../backends/config";
+import { SVMLBackend } from "../backends/svml/svml-backend";
 import { parse } from "../parser/parser-adapter";
 import { StmtNS } from "../ast-types";
 import { FunctionEnvironments } from "../resolver";

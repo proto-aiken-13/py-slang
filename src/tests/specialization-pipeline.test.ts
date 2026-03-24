@@ -1,10 +1,10 @@
 import { parse } from "../parser/parser-adapter";
-import { SVMLBackend } from "../vm/svml-backend";
-import { SVMLCompiler } from "../vm/svml-compiler";
+import { SVMLBackend } from "../backends/svml/svml-backend";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
 import { StmtNS, ExprNS } from "../ast-types";
 import { EnrichedFileInput, specialize } from "../specialization/enrich";
 import { INT_BIT } from "../types/abstract-value";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
 
 describe("SVMLBackend.collectTypeInfo", () => {
   async function runAndCollect(code: string) {

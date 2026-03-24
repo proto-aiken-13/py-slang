@@ -1,9 +1,9 @@
-import { createBackend } from "../backend/config";
-import type { BackendType } from "../backend/config";
+import { createBackend } from "../backends/config";
+import type { BackendType } from "../backends/config";
 import { parse } from "../parser/parser-adapter";
 import { analyze, FunctionEnvironments } from "../resolver";
 import { BasicEvaluator } from "@sourceacademy/conductor/runner";
-import type { Backend } from "../backend/backend";
+import type { Backend } from "../backends/types";
 import { StmtNS } from "../ast-types";
 
 declare const __BACKEND__: string;

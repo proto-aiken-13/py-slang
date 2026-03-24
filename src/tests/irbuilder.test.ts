@@ -1,5 +1,5 @@
-import { SVMLIRBuilder } from "../vm/SVMLIRBuilder";
-import OpCodes from "../vm/opcodes";
+import { SVMLIRBuilder } from "../backends/svml/SVMLIRBuilder";
+import OpCodes from "../backends/svml/opcodes";
 
 describe("SVMLIRBuilder.build() non-destructive", () => {
   test("build() can be called twice with identical results", () => {

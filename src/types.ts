@@ -1,5 +1,5 @@
-import { Context } from "./cse-machine/context";
-import { Value } from "./cse-machine/stash";
+import { Context } from "./backends/cse/context";
+import { Value } from "./backends/cse/stash";
 import { SourceLocation } from "./errors";
 import { ModuleFunctions } from "./modules/moduleTypes";
 import { toPythonString } from "./stdlib";

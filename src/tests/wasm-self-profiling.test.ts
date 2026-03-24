@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
 import { parse } from "../parser/parser-adapter";
 import { StmtNS } from "../ast-types";
 import { INT_BIT } from "../types/abstract-value";

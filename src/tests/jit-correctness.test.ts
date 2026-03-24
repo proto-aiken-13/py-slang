@@ -1,7 +1,7 @@
 import { parse } from "../parser/parser-adapter";
-import { SVMLCompiler } from "../vm/svml-compiler";
-import { SVMLInterpreter } from "../vm/svml-interpreter";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
+import { SVMLInterpreter } from "../backends/svml/svml-interpreter";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
 import type { StmtNS } from "../ast-types";
 
 function runNoJIT(code: string): unknown {

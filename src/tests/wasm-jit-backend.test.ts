@@ -1,7 +1,7 @@
 import { describe, it, expect } from "@jest/globals";
 import { parse } from "../parser/parser-adapter";
 import { StmtNS } from "../ast-types";
-import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
+import { WasmJITBackend } from "../backends/wasm/wasm-jit-backend";
 
 function parseCode(code: string): StmtNS.FileInput {
   const src = code.endsWith("\n") ? code : code + "\n";

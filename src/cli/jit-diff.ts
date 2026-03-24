@@ -21,14 +21,14 @@
 import { Command } from "commander";
 import * as fs from "fs";
 import { parse } from "../parser/parser-adapter";
-import { SVMLBackend } from "../vm/svml-backend";
-import { SVMLCompiler } from "../vm/svml-compiler";
+import { SVMLBackend } from "../backends/svml/svml-backend";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
 import { specialize } from "../specialization/enrich";
-import { BuilderGenerator } from "../wasm-compiler/builderGenerator";
+import { BuilderGenerator } from "../backends/wasm/builderGenerator";
 import { WatGenerator } from "@sourceacademy/wasm-util";
-import OpCodes from "../vm/opcodes";
+import OpCodes from "../backends/svml/opcodes";
 import type { StmtNS } from "../ast-types";
-import type { SVMLProgram } from "../vm/types";
+import type { SVMLProgram } from "../backends/svml/types";
 import { EnrichedFileInput } from "../specialization/enrich";
 
 // ── ANSI colours ──────────────────────────────────────────────────────────────

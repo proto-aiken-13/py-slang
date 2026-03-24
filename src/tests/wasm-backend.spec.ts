@@ -1,9 +1,9 @@
 import { parse } from "../parser/parser-adapter";
 import { StmtNS } from "../ast-types";
-import { compileFromAST, WasmConsoleImports } from "../wasm-compiler";
-import { TYPE_TAG } from "../wasm-compiler/constants";
-import { WasmAdapter } from "../wasm-compiler/wasm-adapter";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
+import { compileFromAST, WasmConsoleImports } from "../backends/wasm";
+import { TYPE_TAG } from "../backends/wasm/constants";
+import { WasmAdapter } from "../backends/wasm/wasm-adapter";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
 import type { FunctionEnvironments } from "../resolver";
 
 const emptyEnvs: FunctionEnvironments = new Map();

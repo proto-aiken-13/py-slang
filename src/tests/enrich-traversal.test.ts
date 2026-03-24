@@ -6,8 +6,8 @@
  * refactor that replaces copyStmt/copyExpr with traverseAST.
  */
 import { parse } from "../parser/parser-adapter";
-import { SVMLBackend } from "../vm/svml-backend";
-import { SVMLCompiler } from "../vm/svml-compiler";
+import { SVMLBackend } from "../backends/svml/svml-backend";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
 import { StmtNS, ExprNS } from "../ast-types";
 import { EnrichedFileInput, specialize } from "../specialization/enrich";
 import { INT_BIT } from "../types/abstract-value";

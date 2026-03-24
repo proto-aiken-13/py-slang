@@ -1,5 +1,5 @@
-import { SVMLAdapter } from "../vm/svml-adapter";
-import type { SVMLArray, SVMLClosure } from "../vm/types";
+import { SVMLAdapter } from "../backends/svml/svml-adapter";
+import type { SVMLArray, SVMLClosure } from "../backends/svml/types";
 import {
   INT_BIT,
   BOOL_BIT,

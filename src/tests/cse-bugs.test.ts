@@ -1,10 +1,10 @@
 import { ExprNS } from "../ast-types";
 import { Token } from "../tokenizer/tokenizer";
 import { TokenType } from "../tokens";
-import { isEnvDependent } from "../cse-machine/utils";
+import { isEnvDependent } from "../backends/cse/utils";
 import { parse } from "../parser/parser-adapter";
-import { evaluate } from "../cse-machine/interpreter";
-import { Context } from "../cse-machine/context";
+import { evaluate } from "../backends/cse/interpreter";
+import { Context } from "../backends/cse/context";
 
 function evalPython(code: string): unknown {
   const src = code + "\n";

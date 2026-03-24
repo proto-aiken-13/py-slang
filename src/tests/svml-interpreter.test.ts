@@ -4,10 +4,10 @@
  */
 
 import { parse } from "../parser/parser-adapter";
-import { SVMLCompiler } from "../vm/svml-compiler";
-import { SVMLInterpreter } from "../vm/svml-interpreter";
-import { UnsupportedOperandTypeError } from "../vm/errors";
-import { SVMLBackend } from "../vm/svml-backend";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
+import { SVMLInterpreter } from "../backends/svml/svml-interpreter";
+import { UnsupportedOperandTypeError } from "../backends/svml/errors";
+import { SVMLBackend } from "../backends/svml/svml-backend";
 
 /**
  * Helper function to compile and run Python code

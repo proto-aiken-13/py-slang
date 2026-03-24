@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { SVMLCompiler } from "../vm";
-import { SVMLProgram } from "../vm/types";
-import { disassemble } from "../vm/svml-assembler";
-import { SVMLInterpreter } from "../vm/svml-interpreter";
+import { SVMLCompiler } from "../backends/svml";
+import { SVMLProgram } from "../backends/svml/types";
+import { disassemble } from "../backends/svml/svml-assembler";
+import { SVMLInterpreter } from "../backends/svml/svml-interpreter";
 import * as fs from "fs";
 import { parse } from "../parser/parser-adapter";
 import { analyze } from "../resolver";

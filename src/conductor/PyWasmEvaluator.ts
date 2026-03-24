@@ -3,7 +3,7 @@
 // Original author(s): Source Academy Team
 
 import { BasicEvaluator, IRunnerPlugin } from "@sourceacademy/conductor/runner";
-import { compileToWasmAndRun } from "../wasm-compiler";
+import { compileToWasmAndRun } from "../backends/wasm";
 
 // Wasm-backed evaluator. For SVML/CSE evaluation use PyEvaluator from ./PyEvaluator.ts.
 export default class PyWasmEvaluator extends BasicEvaluator {

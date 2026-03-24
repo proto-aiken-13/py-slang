@@ -1,8 +1,8 @@
-import { createBackend } from "../backend/config";
-import { SVMLBackend } from "../vm/svml-backend";
-import { CSEBackend } from "../cse-machine/cse-backend";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
-import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
+import { createBackend } from "../backends/config";
+import { SVMLBackend } from "../backends/svml/svml-backend";
+import { CSEBackend } from "../backends/cse/cse-backend";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
+import { WasmJITBackend } from "../backends/wasm/wasm-jit-backend";
 
 describe("createBackend", () => {
   test("svml backend with jit on", () => {

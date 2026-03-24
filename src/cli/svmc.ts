@@ -3,13 +3,13 @@
 import { Command } from "commander";
 import { parse } from "../parser/parser-adapter";
 import { analyze } from "../resolver";
-import { assemble } from "../vm/svml-assembler";
-import { stringifyProgram } from "../vm/util";
+import { assemble } from "../backends/svml/svml-assembler";
+import { stringifyProgram } from "../backends/svml/util";
 import * as fs from "fs";
 import * as path from "path";
-import { SVMLCompiler } from "../vm/svml-compiler";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
 import { StmtNS } from "../ast-types";
-import type { SVMLProgram } from "../vm/types";
+import type { SVMLProgram } from "../backends/svml/types";
 
 /**
  * Standalone function to parse Python to Python AST without translation to ESTree

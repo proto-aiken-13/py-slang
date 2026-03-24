@@ -4,8 +4,8 @@
  * type signatures even with many arguments (>7).
  */
 import { parse } from "../parser/parser-adapter";
-import { SVMLCompiler } from "../vm/svml-compiler";
-import { SVMLInterpreter } from "../vm/svml-interpreter";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
+import { SVMLInterpreter } from "../backends/svml/svml-interpreter";
 
 function compileAndRunWithJIT(code: string): unknown {
   const ast = parse(code);

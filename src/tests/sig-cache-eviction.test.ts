@@ -3,8 +3,8 @@
  * and that eviction does not produce incorrect results.
  */
 import { parse } from "../parser/parser-adapter";
-import { SVMLCompiler } from "../vm/svml-compiler";
-import { SVMLInterpreter } from "../vm/svml-interpreter";
+import { SVMLCompiler } from "../backends/svml/svml-compiler";
+import { SVMLInterpreter } from "../backends/svml/svml-interpreter";
 
 function compileAndRunWithJIT(code: string): unknown {
   const ast = parse(code);

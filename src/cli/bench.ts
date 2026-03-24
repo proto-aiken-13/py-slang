@@ -5,10 +5,10 @@ import * as fs from "fs";
 import { parse } from "../parser/parser-adapter";
 import { analyze } from "../resolver";
 import { StmtNS } from "../ast-types";
-import { SVMLBackend } from "../vm/svml-backend";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
-import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
-import type { Backend } from "../backend/backend";
+import { SVMLBackend } from "../backends/svml/svml-backend";
+import { WasmBackend } from "../backends/wasm/wasm-backend";
+import { WasmJITBackend } from "../backends/wasm/wasm-jit-backend";
+import type { Backend } from "../backends/types";
 import type { FunctionEnvironments } from "../resolver";
 
 interface BenchResult {

@@ -5,6 +5,6 @@ import PyEvaluator from "./conductor/PyEvaluator";
 const { runnerPlugin, conduit } = initialise(PyEvaluator);
 
 // Public API — re-export for external consumers and IDE autocomplete.
-export type { Backend } from "./backend/backend";
-export { createBackend, BackendConfig } from "./backend/config";
+export type { Backend } from "./backends/types";
+export { createBackend, BackendConfig } from "./backends/config";
 export { specialize, EnrichedFileInput } from "./specialization/enrich";
