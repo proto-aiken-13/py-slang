@@ -27,6 +27,7 @@ import {
   negativeFloat,
   zeroFloat,
   complexValue,
+  stringValue,
   TOP,
 } from "../types/lattice-ops";
 import { IntRef, BoolRef, INT_BIT, BOOL_BIT, FLOAT_BIT, COMPLEX_BIT } from "../types/abstract-value";
@@ -288,6 +289,21 @@ describe("transferBinaryOp with complex", () => {
   test("float + complex = complex", () => {
     const result = transferBinaryOp("+", positiveFloat(), complexValue());
     expect(result.sound.kinds).toBe(COMPLEX_BIT);
+  });
+
+  test("complex // int = TOP (not valid per spec)", () => {
+    const result = transferBinaryOp("//", complexValue(), positiveInteger());
+    expect(result).toBe(TOP);
+  });
+
+  test("complex % int = TOP (not valid per spec)", () => {
+    const result = transferBinaryOp("%", complexValue(), positiveInteger());
+    expect(result).toBe(TOP);
+  });
+
+  test("complex + string = TOP (non-numeric)", () => {
+    const result = transferBinaryOp("+", complexValue(), stringValue());
+    expect(result).toBe(TOP);
   });
 });
 

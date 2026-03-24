@@ -170,8 +170,10 @@ export function transferBinaryOp(
   const lk = left.sound.kinds;
   const rk = right.sound.kinds;
 
-  // Complex promotion: if either operand is (only) complex, result is complex
+  // Complex promotion: spec only defines +, -, *, / for complex.
+  // // and % raise TypeError at runtime.
   if (lk === COMPLEX_BIT || rk === COMPLEX_BIT) {
+    if (op === "//" || op === "%") return TOP;
     const otherKinds = lk === COMPLEX_BIT ? rk : lk;
     // complex op numeric = complex; complex op non-numeric = TOP
     if (otherKinds & ~(INT_BIT | FLOAT_BIT | COMPLEX_BIT)) return TOP;
@@ -253,7 +255,7 @@ export function transferCompare(
     return boolean(3 as BoolRef);
   }
 
-  // Ordering comparisons: not valid on complex
+  // Ordering comparisons: not valid on complex (raises TypeError at runtime)
   if (lk === COMPLEX_BIT || rk === COMPLEX_BIT) return TOP;
 
   // Pure int comparisons
