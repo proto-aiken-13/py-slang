@@ -9,15 +9,15 @@ if [ ! -d "$DEST" ]; then
 fi
 
 VARIANTS=(
-  "svml-jit:BACKEND=svml JIT=on"
-  "svml-nojit:BACKEND=svml JIT=off"
+  "svml-jit:--backend svml --jit"
+  "svml-nojit:--backend svml --no-jit"
 )
 
 for entry in "${VARIANTS[@]}"; do
   name="${entry%%:*}"
-  envs="${entry#*:}"
+  flags="${entry#*:}"
   echo "Building $name..."
-  env $envs npx rollup -c --bundleConfigAsCjs --silent
+  npx tsx scripts/build.ts $flags
   cp dist/python-evaluator.cjs "$DEST/python-$name.cjs"
   echo "  -> $DEST/python-$name.cjs"
 done

@@ -11,6 +11,12 @@ export interface BackendConfig {
   jit?: boolean;
 }
 
+/**
+ * Create a Backend instance.
+ *
+ * @param config.backend - "svml" (default) or "cse"
+ * @param config.jit - Enable JIT specialization (default: true, SVML only)
+ */
 export function createBackend(config?: BackendConfig): Backend {
   const backendType = config?.backend ?? "svml";
   const jit = config?.jit ?? true;

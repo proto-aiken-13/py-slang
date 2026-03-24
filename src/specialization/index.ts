@@ -29,6 +29,10 @@ export { specializeAST } from "./specialize-ast";
 // Re-export enrichment pipeline
 export { EnrichedFileInput, specialize } from "./enrich";
 
+// Re-export orchestrator
+export { AnalysisCache } from "./orchestrator";
+export type { Analyzer } from "./orchestrator";
+
 // Re-export transfer functions
 export {
   transferBinaryOp,

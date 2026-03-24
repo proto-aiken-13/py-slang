@@ -9,11 +9,20 @@ import { StmtNS } from "../ast-types";
 declare const __BACKEND__: string;
 declare const __JIT__: boolean;
 
+const VALID_BACKENDS: readonly BackendType[] = ["svml", "cse", "wasm", "wasm-jit"];
+
+function validateBackendType(v: string): BackendType {
+  if (VALID_BACKENDS.includes(v as BackendType)) return v as BackendType;
+  throw new Error(
+    `Invalid backend: ${v}. Expected one of: ${VALID_BACKENDS.join(", ")}`,
+  );
+}
+
 export default class PyEvaluator extends BasicEvaluator {
   private lastSource: string | null = null;
   private lastAST: StmtNS.FileInput | null = null;
   private backend: Backend = createBackend({
-    backend: (typeof __BACKEND__ !== "undefined" ? __BACKEND__ : "svml") as BackendType,
+    backend: validateBackendType(typeof __BACKEND__ !== "undefined" ? __BACKEND__ : "svml"),
     jit: typeof __JIT__ !== "undefined" ? __JIT__ : true,
   });
 

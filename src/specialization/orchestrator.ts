@@ -1,15 +1,15 @@
 import type { StmtNS } from "../ast-types";
 import type { TypeEnv } from "../types/abstract-value";
-import type { AnalysisResult, SlotLookup } from "../specialization/types";
+import type { AnalysisResult, SlotLookup } from "./types";
 
-export interface Specializer {
+export interface Analyzer {
   analyze(body: StmtNS.Stmt[], bindings: TypeEnv, slotLookup: SlotLookup): AnalysisResult;
 }
 
-export class SpecializationOrchestrator {
+export class AnalysisCache {
   private cache = new Map<string, AnalysisResult>();
 
-  constructor(private specializer: Specializer) {}
+  constructor(private analyzer: Analyzer) {}
 
   getOrAnalyze(
     funcIndex: number,
@@ -21,7 +21,7 @@ export class SpecializationOrchestrator {
     const cached = this.cache.get(key);
     if (cached) return cached;
 
-    const result = this.specializer.analyze(body, bindings, slotLookup);
+    const result = this.analyzer.analyze(body, bindings, slotLookup);
     this.cache.set(key, result);
     return result;
   }

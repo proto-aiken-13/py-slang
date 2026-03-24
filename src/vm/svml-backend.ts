@@ -21,6 +21,13 @@ interface CachedProgram {
   bindings: BackwardsBindings<number>;
 }
 
+/**
+ * SVML bytecode backend. Compiles Python AST to SVML IR,
+ * executes via stack-based interpreter, and optionally applies
+ * JIT specialization based on observed runtime types.
+ *
+ * Caches compiled programs by AST identity to skip recompilation.
+ */
 export class SVMLBackend implements Backend {
   private adapter = new SVMLAdapter();
   private jit: boolean;

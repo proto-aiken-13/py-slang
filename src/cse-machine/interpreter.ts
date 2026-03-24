@@ -10,7 +10,6 @@ import { ExprNS, StmtNS } from "../ast-types";
 import { TokenType } from "../tokens";
 import * as error from "../errors/errors";
 import { BuiltinReassignmentError } from "../errors/errors";
-import { IOptions } from "../runner/pyRunner";
 import { builtIns, toPythonString } from "../stdlib";
 import { CSEBreak, RecursivePartial, Representation, Result } from "../types";
 import { Closure } from "./closure";
@@ -47,6 +46,12 @@ import {
   UnOpInstr,
 } from "./types";
 import { envChanging, isNode, pyDefineVariable, pyGetVariable, scanForAssignments } from "./utils";
+
+interface IOptions {
+  isPrelude: boolean;
+  envSteps: number;
+  stepLimit: number;
+}
 
 type CmdEvaluator = (
   code: string,
