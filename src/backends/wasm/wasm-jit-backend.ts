@@ -1,10 +1,10 @@
-import type { Backend } from "../backend/backend";
-import type { StmtNS } from "../ast-types";
-import type { FunctionEnvironments } from "../resolver";
-import type { TypeInformation } from "../specialization/types";
-import { SVMLBackend } from "../vm/svml-backend";
-import { SVMLCompiler } from "../vm/svml-compiler";
-import { specialize } from "../specialization/enrich";
+import type { Backend } from "../types";
+import type { StmtNS } from "../../ast-types";
+import type { FunctionEnvironments } from "../../resolver";
+import type { TypeInformation } from "../../specialization/types";
+import { SVMLBackend } from "../svml/svml-backend";
+import { SVMLCompiler } from "../svml/svml-compiler";
+import { specialize } from "../../specialization/enrich";
 import { WasmBackend } from "./wasm-backend";
 
 /**

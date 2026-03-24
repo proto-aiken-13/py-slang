@@ -1,8 +1,8 @@
-import { ExprNS, StmtNS } from "../ast-types";
-import { TokenType } from "../tokens";
-import type { AbstractValue } from "../types/abstract-value";
-import { INT_BIT, BOOL_BIT, BoolRef, IntRef } from "../types/abstract-value";
-import type { BackwardsBindings } from "../backend/backwards-bindings";
+import { ExprNS, StmtNS } from "../../ast-types";
+import { TokenType } from "../../tokens";
+import type { AbstractValue } from "../../types/abstract-value";
+import { INT_BIT, BOOL_BIT, BoolRef, IntRef } from "../../types/abstract-value";
+import type { BackwardsBindings } from "../backwards-bindings";
 import {
   ALLOC_ENV_FX,
   APPLY_FX_NAME,

@@ -1,6 +1,6 @@
-import type { BackendAdapter } from "../backend/adapter";
-import type { PythonType } from "../types/python-type";
-import type { AbstractValue } from "../types/abstract-value";
+import type { BackendAdapter } from "../adapter";
+import type { PythonType } from "../../types/python-type";
+import type { AbstractValue } from "../../types/abstract-value";
 import { TYPE_TAG } from "./constants";
 import {
   positiveInteger,
@@ -11,7 +11,7 @@ import {
   stringValue,
   nullValue,
   TOP,
-} from "../types/lattice-ops";
+} from "../../types/lattice-ops";
 
 type WasmNative = { tag: number; payload: bigint; memory: WebAssembly.Memory };
 

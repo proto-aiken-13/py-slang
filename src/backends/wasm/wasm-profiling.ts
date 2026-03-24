@@ -6,9 +6,9 @@ import {
   nullValue,
   closureValue,
   TOP,
-} from "../types/lattice-ops";
-import type { AbstractValue } from "../types/abstract-value";
-import type { FunctionProfile } from "../specialization/types";
+} from "../../types/lattice-ops";
+import type { AbstractValue } from "../../types/abstract-value";
+import type { FunctionProfile } from "../../specialization/types";
 
 /** Maximum number of parameters tracked per function. */
 export const MAX_PARAMS_TRACKED = 8;

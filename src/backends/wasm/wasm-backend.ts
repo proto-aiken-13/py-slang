@@ -1,14 +1,14 @@
-import type { Backend } from "../backend/backend";
-import type { StmtNS } from "../ast-types";
-import type { FunctionEnvironments } from "../resolver";
-import type { ComputationalResult } from "../types/result";
+import type { Backend } from "../types";
+import type { StmtNS } from "../../ast-types";
+import type { FunctionEnvironments } from "../../resolver";
+import type { ComputationalResult } from "../../types/result";
 import { buildWasmModule, runWasmModule, type WasmConsoleImports } from "./index";
 import { WasmAdapter } from "./wasm-adapter";
 import { ERROR_MAP } from "./constants";
-import { EnrichedFileInput } from "../specialization/enrich";
-import type { BackwardsBindings } from "../backend/backwards-bindings";
+import { EnrichedFileInput } from "../../specialization/enrich";
+import type { BackwardsBindings } from "../backwards-bindings";
 import { decodeObservations, MAX_PARAMS_TRACKED } from "./wasm-profiling";
-import type { TypeInformation } from "../specialization/types";
+import type { TypeInformation } from "../../specialization/types";
 
 export class WasmBackend implements Backend {
   private adapter = new WasmAdapter();

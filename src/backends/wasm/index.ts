@@ -1,12 +1,12 @@
 import assert from "assert";
 import wabt from "wabt";
-import { parse } from "../parser";
-import { StmtNS } from "../ast-types";
+import { parse } from "../../parser";
+import { StmtNS } from "../../ast-types";
 import { BuilderGenerator } from "./builderGenerator";
 import { ERROR_MAP } from "./constants";
 import { WatGenerator } from "@sourceacademy/wasm-util";
-import type { AbstractValue } from "../types/abstract-value";
-import { BackwardsBindings } from "../backend/backwards-bindings";
+import type { AbstractValue } from "../../types/abstract-value";
+import { BackwardsBindings } from "../backwards-bindings";
 
 // Module-level WABT singleton — loaded once, reused across all compilations.
 let _wabt: Awaited<ReturnType<typeof wabt>> | null = null;
