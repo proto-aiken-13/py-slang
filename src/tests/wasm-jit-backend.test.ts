@@ -85,10 +85,10 @@ add(1, 2)
   });
 
   test("produces same result as manually wired SVML+Wasm pipeline", async () => {
-    const { SVMLBackend } = await import("../vm/svml-backend");
-    const { SVMLCompiler } = await import("../vm/svml-compiler");
+    const { SVMLBackend } = await import("../backends/svml/svml-backend");
+    const { SVMLCompiler } = await import("../backends/svml/svml-compiler");
     const { specialize } = await import("../specialization/enrich");
-    const { WasmBackend } = await import("../wasm-compiler/wasm-backend");
+    const { WasmBackend } = await import("../backends/wasm/wasm-backend");
 
     const code = "def f(x, y):\n  return x + y\nf(5, 6)\n";
     const ast = parseCode(code);
