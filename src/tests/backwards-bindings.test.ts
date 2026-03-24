@@ -1,8 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
-import { BackwardsBindings } from "../backwards-bindings";
-import type { SpecializableFunctionNode } from "../../specialization/types";
-import type { AbstractValue } from "../../types/abstract-value";
-import type { FunctionProfile } from "../../specialization/types";
+import { BackwardsBindings } from "../backends/backwards-bindings";
+import type { SpecializableFunctionNode } from "../specialization/types";
+import type { AbstractValue } from "../types/abstract-value";
+import type { FunctionProfile } from "../specialization/types";
 
 // Minimal stub for a SpecializableFunctionNode
 function makeNode(name: string): SpecializableFunctionNode {
