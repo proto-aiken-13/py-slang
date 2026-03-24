@@ -378,6 +378,7 @@ describe("AbstractValue join", () => {
     expect(ab.sound.kinds).toBe(ba.sound.kinds);
     expect(ab.sound.intRef).toBe(ba.sound.intRef);
     expect(ab.sound.boolRef).toBe(ba.sound.boolRef);
+    expect(ab.sound.floatRef).toBe(ba.sound.floatRef);
   });
 
   test("join is associative for three different kinds", () => {
@@ -389,6 +390,7 @@ describe("AbstractValue join", () => {
     expect(lhs.sound.kinds).toBe(rhs.sound.kinds);
     expect(lhs.sound.intRef).toBe(rhs.sound.intRef);
     expect(lhs.sound.boolRef).toBe(rhs.sound.boolRef);
+    expect(lhs.sound.floatRef).toBe(rhs.sound.floatRef);
   });
 });
 
@@ -417,6 +419,7 @@ describe("AbstractValue meet", () => {
     expect(ab.sound.kinds).toBe(ba.sound.kinds);
     expect(ab.sound.intRef).toBe(ba.sound.intRef);
     expect(ab.sound.boolRef).toBe(ba.sound.boolRef);
+    expect(ab.sound.floatRef).toBe(ba.sound.floatRef);
   });
 });
 
