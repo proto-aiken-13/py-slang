@@ -242,8 +242,9 @@ class ASTSpecializationVisitor {
         const info = value > 0 ? positiveInteger() : value < 0 ? negativeInteger() : zeroInteger();
         return this.annotate(expr, info);
       }
-      // Float literal (has fractional part, or is NaN/Infinity)
-      if (Number.isNaN(value)) return this.annotate(expr, floatValue());
+      // Float literal (fractional, NaN, or Infinity)
+      if (Number.isNaN(value)) return this.annotate(expr, floatValue()); // NaN → top sign
+      // Infinity/−Infinity handled by sign test below; −0.0 maps to zeroFloat (correct)
       const info = value > 0 ? positiveFloat() : value < 0 ? negativeFloat() : zeroFloat();
       return this.annotate(expr, info);
     } else if (typeof value === "boolean") {

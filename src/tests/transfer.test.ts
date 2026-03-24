@@ -313,10 +313,22 @@ describe("transferCompare with floats", () => {
     expect(result.sound.boolRef).toBe(BoolRef.True);
   });
 
-  test("int > float = bool (top, mixed numeric)", () => {
+  test("posInt > posFloat = top (both positive, could be either)", () => {
     const result = transferCompare(">", positiveInteger(), positiveFloat());
     expect(result.sound.kinds).toBe(BOOL_BIT);
     expect(result.sound.boolRef).toBe(BoolRef.Top);
+  });
+
+  test("posInt > zeroFloat = true (mixed int/float sign analysis)", () => {
+    const result = transferCompare(">", positiveInteger(), zeroFloat());
+    expect(result.sound.kinds).toBe(BOOL_BIT);
+    expect(result.sound.boolRef).toBe(BoolRef.True);
+  });
+
+  test("posInt == negFloat = false (mixed int/float sign analysis)", () => {
+    const result = transferCompare("==", positiveInteger(), negativeFloat());
+    expect(result.sound.kinds).toBe(BOOL_BIT);
+    expect(result.sound.boolRef).toBe(BoolRef.False);
   });
 });
 

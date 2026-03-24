@@ -135,6 +135,7 @@ export function falseValue(): AbstractValue {
   return BOOL_SINGLETONS[2];
 } // BoolRef.False
 
+/** Default IntRef.Top covers NaN (no meaningful sign). */
 export function floatValue(floatRef: IntRef = 7 as IntRef): AbstractValue {
   return FLOAT_SINGLETONS[floatRef];
 }

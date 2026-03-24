@@ -242,14 +242,11 @@ export function transferCompare(
 
   // == and != work on any types
   if (op === "==" || op === "!=") {
-    if (lk === INT_BIT && rk === INT_BIT) {
-      const ref = op === "==" ? eqSigns(left.sound.intRef, right.sound.intRef)
-                               : neqSigns(left.sound.intRef, right.sound.intRef);
-      return boolean(ref);
-    }
-    if (lk === FLOAT_BIT && rk === FLOAT_BIT) {
-      const ref = op === "==" ? eqSigns(left.sound.floatRef, right.sound.floatRef)
-                               : neqSigns(left.sound.floatRef, right.sound.floatRef);
+    // Use sign analysis when both operands are numeric (int or float)
+    if ((lk === INT_BIT || lk === FLOAT_BIT) && (rk === INT_BIT || rk === FLOAT_BIT)) {
+      const lRef = lk === FLOAT_BIT ? left.sound.floatRef : left.sound.intRef;
+      const rRef = rk === FLOAT_BIT ? right.sound.floatRef : right.sound.intRef;
+      const ref = op === "==" ? eqSigns(lRef, rRef) : neqSigns(lRef, rRef);
       return boolean(ref);
     }
     return boolean(3 as BoolRef);
@@ -288,9 +285,19 @@ export function transferCompare(
     return boolean(resultRef);
   }
 
-  // Mixed int/float comparison — conservative
+  // Mixed int/float comparison — sign analysis still applies since both use IntRef
   if ((lk === INT_BIT || lk === FLOAT_BIT) && (rk === INT_BIT || rk === FLOAT_BIT)) {
-    return boolean(3 as BoolRef);
+    const lRef = lk === FLOAT_BIT ? left.sound.floatRef : left.sound.intRef;
+    const rRef = rk === FLOAT_BIT ? right.sound.floatRef : right.sound.intRef;
+    let resultRef: BoolRef;
+    switch (op) {
+      case ">": resultRef = gtSigns(lRef, rRef); break;
+      case "<": resultRef = ltSigns(lRef, rRef); break;
+      case ">=": resultRef = geSigns(lRef, rRef); break;
+      case "<=": resultRef = leSigns(lRef, rRef); break;
+      default: return boolean(3 as BoolRef);
+    }
+    return boolean(resultRef);
   }
 
   return boolean(3 as BoolRef);
