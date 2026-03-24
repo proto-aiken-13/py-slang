@@ -1,8 +1,8 @@
-import type { Backend } from "./backend";
-import { SVMLBackend } from "../vm/svml-backend";
-import { CSEBackend } from "../cse-machine/cse-backend";
-import { WasmBackend } from "../wasm-compiler/wasm-backend";
-import { WasmJITBackend } from "../wasm-compiler/wasm-jit-backend";
+import type { Backend } from "./types";
+import { SVMLBackend } from "./svml/svml-backend";
+import { CSEBackend } from "./cse/cse-backend";
+import { WasmBackend } from "./wasm/wasm-backend";
+import { WasmJITBackend } from "./wasm/wasm-jit-backend";
 
 export type BackendType = "svml" | "cse" | "wasm" | "wasm-jit";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { BuilderGenerator } from "../builderGenerator";
-import { parse } from "../../parser/parser-adapter";
+import { parse } from "../../../parser/parser-adapter";
 import { MAX_PARAMS_TRACKED } from "../wasm-profiling";
 import { WatGenerator } from "@sourceacademy/wasm-util";
 

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
 import { decodeObservations, tagToAbstractValue, MAX_PARAMS_TRACKED } from "../wasm-profiling";
 import { TYPE_TAG } from "../constants";
-import { INT_BIT, BOOL_BIT, STR_BIT, NULL_BIT } from "../../types/abstract-value";
-import { TOP } from "../../types/lattice-ops";
+import { INT_BIT, BOOL_BIT, STR_BIT, NULL_BIT } from "../../../types/abstract-value";
+import { TOP } from "../../../types/lattice-ops";
 
 describe("decodeObservations", () => {
   // Uses Uint32Array to match how decodeObservations reads memory.

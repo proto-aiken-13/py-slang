@@ -1,7 +1,7 @@
 import { describe, it, expect } from "@jest/globals";
 import { BuilderGenerator } from "../builderGenerator";
-import { BackwardsBindings } from "../../backend/backwards-bindings";
-import { parse } from "../../parser/parser-adapter";
+import { BackwardsBindings } from "../../backwards-bindings";
+import { parse } from "../../../parser/parser-adapter";
 
 describe("BuilderGenerator.withProfiling() wires BackwardsBindings", () => {
   it("registers one entry per user FunctionDef", () => {
