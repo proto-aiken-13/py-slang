@@ -38,6 +38,9 @@ const enum SigTag {
   Str = 6,
 }
 
+/** Maximum number of cached specializations per function. */
+const MAX_SIG_CACHE = 50;
+
 declare const __DEBUG__: boolean;
 const debug: (msg: string) => void = msg => console.log(msg);
 const lambdaReturnCache = new WeakMap<ExprNS.Lambda, StmtNS.Stmt[]>();
@@ -952,6 +955,16 @@ export class SVMLInterpreter {
       this.sigCaches[functionIndex] = fnCache;
     }
     fnCache.set(sigKey, specializedIR);
+
+    // Evict oldest entry if cache exceeds limit (FIFO eviction).
+    // Map iteration order is insertion order, so the first key is the oldest.
+    if (fnCache.size > MAX_SIG_CACHE) {
+      const oldest = fnCache.keys().next().value;
+      if (oldest !== undefined) {
+        fnCache.delete(oldest);
+      }
+    }
+
     closure.lastSig = sigKey;
     closure.lastIR = specializedIR;
     return specializedIR;
