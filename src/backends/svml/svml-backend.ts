@@ -1,14 +1,14 @@
-import type { Backend } from "../backend/backend";
-import { StmtNS } from "../ast-types";
-import type { FunctionEnvironments } from "../resolver";
-import type { ComputationalResult } from "../types/result";
+import type { Backend } from "../types";
+import { StmtNS } from "../../ast-types";
+import type { FunctionEnvironments } from "../../resolver";
+import type { ComputationalResult } from "../../types/result";
 import { SVMLCompiler } from "./svml-compiler";
 import { SVMLInterpreter } from "./svml-interpreter";
 import { SVMLAdapter } from "./svml-adapter";
 import type { SVMLProgram } from "./types";
 import type { InstrumentationTracker } from "./instrumentation";
-import type { TypeInformation } from "../specialization/types";
-import type { BackwardsBindings } from "../backend/backwards-bindings";
+import type { TypeInformation } from "../../specialization/types";
+import type { BackwardsBindings } from "../backwards-bindings";
 
 export interface SVMLBackendOptions {
   jit?: boolean;

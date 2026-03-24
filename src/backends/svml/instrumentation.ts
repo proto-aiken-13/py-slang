@@ -1,4 +1,4 @@
-import { StmtNS, ExprNS } from "../ast-types";
+import { StmtNS, ExprNS } from "../../ast-types";
 
 /**
  * AST-level instrumentation for analyzing and optimizing compiled functions

@@ -1,4 +1,4 @@
-import Buffer from "../utils/buffer";
+import Buffer from "../../utils/buffer";
 import OpCodes, { getInstructionSize, OPCODE_MAX } from "./opcodes";
 import { Instruction, SVMLProgram, SVMLIR } from "./types";
 

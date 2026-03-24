@@ -1,17 +1,17 @@
-import { StmtNS, ExprNS } from "../ast-types";
-import { Token } from "../tokenizer";
-import { TokenType } from "../tokens";
+import { StmtNS, ExprNS } from "../../ast-types";
+import { Token } from "../../tokenizer";
+import { TokenType } from "../../tokens";
 import { PRIMITIVE_FUNCTIONS } from "./sinter-primitives";
 import { SVMLProgram } from "./types";
-import type { AbstractValue } from "../types/abstract-value";
-import { INT_BIT, BOOL_BIT, IntRef, BoolRef } from "../types/abstract-value";
-import type { AnalysisResult } from "../specialization/types";
-import type { SlotInfo } from "../specialization/specialize-ast";
+import type { AbstractValue } from "../../types/abstract-value";
+import { INT_BIT, BOOL_BIT, IntRef, BoolRef } from "../../types/abstract-value";
+import type { AnalysisResult } from "../../specialization/types";
+import type { SlotInfo } from "../../specialization/specialize-ast";
 import { SVMLIRBuilder } from "./SVMLIRBuilder";
 import OpCodes from "./opcodes";
-import { FunctionEnvironments, Environment, Resolver } from "../resolver";
+import { FunctionEnvironments, Environment, Resolver } from "../../resolver";
 import { InstrumentationTracker } from "./instrumentation";
-import { BackwardsBindings } from "../backend/backwards-bindings";
+import { BackwardsBindings } from "../backwards-bindings";
 
 // Fast compiler annotations for maximum performance
 interface CompilerAnnotation {

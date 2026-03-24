@@ -10,7 +10,7 @@ import {
   SVMLIterator,
   isSVMLObject,
 } from "./types";
-import type { AbstractValue } from "../types/abstract-value";
+import type { AbstractValue } from "../../types/abstract-value";
 import {
   positiveInteger,
   negativeInteger,
@@ -18,14 +18,14 @@ import {
   trueValue,
   falseValue,
   stringValue,
-} from "../types/lattice-ops";
-import { specializeAST } from "../specialization/specialize-ast";
+} from "../../types/lattice-ops";
+import { specializeAST } from "../../specialization/specialize-ast";
 import OpCodes from "./opcodes";
 import { InstrumentationTracker } from "./instrumentation";
 import { executePrimitive } from "./sinter-primitives";
 import { UnsupportedOperandTypeError, ZeroDivisionError } from "./errors";
-import { pythonMod } from "../utils/arithmetic";
-import { StmtNS, ExprNS } from "../ast-types";
+import { pythonMod } from "../../utils/arithmetic";
+import { StmtNS, ExprNS } from "../../ast-types";
 import type { SVMLCompiler } from "./svml-compiler";
 
 const enum SigTag {

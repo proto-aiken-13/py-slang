@@ -1,6 +1,6 @@
-import type { BackendAdapter } from "../backend/adapter";
-import type { PythonType } from "../types/python-type";
-import type { AbstractValue } from "../types/abstract-value";
+import type { BackendAdapter } from "../adapter";
+import type { PythonType } from "../../types/python-type";
+import type { AbstractValue } from "../../types/abstract-value";
 import type { SVMLBoxType } from "./types";
 import {
   positiveInteger,
@@ -17,7 +17,7 @@ import {
   floatValue,
   complexValue,
   TOP,
-} from "../types/lattice-ops";
+} from "../../types/lattice-ops";
 
 export class SVMLAdapter implements BackendAdapter<SVMLBoxType> {
   toPython(native: SVMLBoxType): PythonType {
