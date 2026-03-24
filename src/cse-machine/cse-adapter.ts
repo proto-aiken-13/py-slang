@@ -4,16 +4,25 @@ import type { Value } from "./stash";
 export class CSEAdapter {
   toPython(value: Value): PythonType {
     switch (value.type) {
-      case "number":
       case "int":
         return { tag: "int", value: value.value };
+      case "number":
+        // CSE "number" is ambiguous; use integer heuristic
+        if (Number.isInteger(value.value) && Number.isFinite(value.value)) {
+          return { tag: "int", value: value.value };
+        }
+        return { tag: "float", value: value.value };
       case "float":
-        // PythonType has no "float" tag yet; map to "int" (both are JS numbers)
-        return { tag: "int", value: value.value };
+        return { tag: "float", value: value.value };
       case "bool":
         return { tag: "bool", value: value.value };
       case "string":
         return { tag: "str", value: value.value };
+      case "complex":
+        return { tag: "complex", real: value.value.real, imag: value.value.imag };
+      case "bigint":
+        // Lossy: BigInt → number truncation for values exceeding Number.MAX_SAFE_INTEGER
+        return { tag: "int", value: Number(value.value) };
       case "none":
       case "NoneType":
       case "undefined":
@@ -31,11 +40,7 @@ export class CSEAdapter {
       case "builtin":
         // BuiltinValue doesn't carry arity info in its interface
         return { tag: "function", name: value.name, arity: 0 };
-      case "bigint":
-        // Lossy: BigInt → number truncation for values exceeding Number.MAX_SAFE_INTEGER
-        return { tag: "int", value: Number(value.value) };
       case "error":
-      case "complex":
       default:
         return { tag: "none" };
     }
