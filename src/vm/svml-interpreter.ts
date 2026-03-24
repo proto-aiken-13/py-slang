@@ -938,6 +938,10 @@ export class SVMLInterpreter {
       body = funcNode.body;
     }
 
+    // Freeze bindings to enforce immutability during specialization.
+    // specializeAST reads bindings but must not mutate them.
+    Object.freeze(bindings);
+
     const slotLookup = compiler.createSlotLookupForFunction(funcNode);
     const annotations = specializeAST(body, bindings, slotLookup);
     const specializedIR = compiler.recompileFunctionWithAnnotations(funcNode, annotations);
