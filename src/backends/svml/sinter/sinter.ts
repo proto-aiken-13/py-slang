@@ -1,6 +1,6 @@
 import sinterwasm from "./sinterwasm.js";
 import wasm from "./sinterwasm.wasm";
-import { Value } from "../backends/cse/stash";
+import { Value } from "../../cse/stash";
 
 // Define the sinter module interface
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

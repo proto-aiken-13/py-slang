@@ -5,6 +5,7 @@ import commonjs from "@rollup/plugin-commonjs";
 import nodePolyfills from "rollup-plugin-polyfill-node";
 import terser from "@rollup/plugin-terser";
 import replace from "@rollup/plugin-replace";
+import wasm from "@rollup/plugin-wasm";
 
 // Build-time backend selection via environment variables.
 // Set by scripts/build.ts; defaults to SVML with JIT enabled.
@@ -58,6 +59,7 @@ function plugins(terserConfig) {
     replacePlugin,
     commonjs(),
     json(),
+    wasm({ maxFileSize: 100_000 }),
     typescript(),
     nodeResolve(),
     nodePolyfills(),

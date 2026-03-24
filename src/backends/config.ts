@@ -3,8 +3,9 @@ import { SVMLBackend } from "./svml/svml-backend";
 import { CSEBackend } from "./cse/cse-backend";
 import { WasmBackend } from "./wasm/wasm-backend";
 import { WasmJITBackend } from "./wasm/wasm-jit-backend";
+import { SinterBackend } from "./svml/sinter-backend";
 
-export type BackendType = "svml" | "cse" | "wasm" | "wasm-jit";
+export type BackendType = "svml" | "cse" | "wasm" | "wasm-jit" | "sinter";
 
 export interface BackendConfig {
   backend?: BackendType;
@@ -30,6 +31,8 @@ export function createBackend(config?: BackendConfig): Backend {
       return new WasmBackend();
     case "wasm-jit":
       return new WasmJITBackend();
+    case "sinter":
+      return new SinterBackend();
     default:
       throw new Error(`Unknown backend: ${backendType}`);
   }

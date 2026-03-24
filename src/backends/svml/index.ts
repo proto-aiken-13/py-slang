@@ -24,3 +24,4 @@ export { PRIMITIVE_FUNCTIONS, executePrimitive } from "./sinter-primitives";
 // Backend
 export { SVMLBackend } from "./svml-backend";
 export { SVMLAdapter } from "./svml-adapter";
+export { SinterBackend } from "./sinter-backend";
