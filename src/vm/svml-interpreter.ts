@@ -87,7 +87,7 @@ export class SVMLInterpreter {
   private maxInstructionLimit: number = 1000000;
 
   // Per-function specialization cache: functionIndex -> (sigKey -> specialized SVMLIR)
-  private sigCaches: Map<number, SVMLIR>[] = [];
+  private sigCaches: Map<string, SVMLIR>[] = [];
 
   // Per-function type profiles accumulated during JIT misses.
   // functionIndex -> list of observed profiles (Map<paramIndex, AbstractValue>).
@@ -847,9 +847,9 @@ export class SVMLInterpreter {
    *
    * Cache key: packed integer (functionIndex * 0x10000 + typeSigInt).
    */
-  private computeSigKey(args: SVMLBoxType[]): number {
-    let key = 0;
+  private computeSigKey(args: SVMLBoxType[]): string | null {
     let hasKnown = false;
+    let key = "";
     for (let i = 0; i < args.length; i++) {
       const v = args[i];
       const t = typeof v;
@@ -864,9 +864,10 @@ export class SVMLInterpreter {
         tag = SigTag.Str;
         hasKnown = true;
       }
-      key = key * 8 + tag;
+      if (i > 0) key += ",";
+      key += String(tag);
     }
-    return hasKnown ? key : -1;
+    return hasKnown ? key : null;
   }
 
   private getSpecializedIR(
@@ -876,7 +877,7 @@ export class SVMLInterpreter {
     closure: SVMLClosure,
   ): SVMLIR {
     const sigKey = this.computeSigKey(args);
-    if (sigKey === -1) return funcDef;
+    if (sigKey === null) return funcDef;
 
     // Fast path: same types as last call
     if (sigKey === closure.lastSig) return closure.lastIR!;

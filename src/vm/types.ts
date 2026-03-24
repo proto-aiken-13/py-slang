@@ -42,7 +42,7 @@ export interface SVMLClosure {
   parentEnv: SVMLEnvironment | null;
   isMemoized?: boolean;
   memoCache?: Map<string, SVMLBoxType>;
-  lastSig?: number; // last specialization signature key
+  lastSig?: string; // last specialization signature key
   lastIR?: SVMLIR; // corresponding specialized IR
 }
 

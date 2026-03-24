@@ -172,6 +172,24 @@ class ASTSpecializationVisitor {
   }
 
   private visitWhile(stmt: StmtNS.While): void {
+    // Two-pass analysis: first pass processes the body to widen slot types,
+    // then re-evaluate the condition with widened types. This prevents
+    // constant-folding loop conditions based only on initial parameter types
+    // (e.g., "while n > 0" with n initially positive would otherwise fold to True).
+    const saved = this.slotTypes.slice();
+    this.visitStatements(stmt.body);
+    // Join pre-loop and post-body types
+    const len = Math.max(saved.length, this.slotTypes.length);
+    for (let i = 0; i < len; i++) {
+      const pre = saved[i];
+      const post = this.slotTypes[i];
+      if (pre !== undefined && post !== undefined) {
+        this.slotTypes[i] = join(pre, post);
+      } else {
+        this.slotTypes[i] = pre ?? post;
+      }
+    }
+    // Now evaluate the condition with widened types
     this.visitExpr(stmt.condition);
     this.visitStatements(stmt.body);
   }

@@ -299,8 +299,18 @@ export class SVMLCompiler
       throw new Error("Function environment not found for slot lookup");
     }
 
-    // Build a child compiler to get the correct environment context
-    // We reuse the existing slot maps since they were populated during initial compilation
+    // Pre-populate parameter slots to match the compiler's slot assignment.
+    // During initial compilation, a child compiler assigns params to slots 0..N-1.
+    // We must replicate that here so the specializer's slot indices match.
+    if (!this.envSlotMaps.has(funcEnv)) {
+      const slotMap = new Map<string, number>();
+      this.envSlotMaps.set(funcEnv, slotMap);
+      for (let i = 0; i < funcNode.parameters.length; i++) {
+        slotMap.set(funcNode.parameters[i].lexeme, i);
+      }
+      this.envSlotCounters.set(funcEnv, funcNode.parameters.length);
+    }
+
     return (token: Token): SlotInfo => {
       // Always do direct environment lookup — the main compiler's tokenAnnotations
       // cache won't contain entries for tokens inside function bodies (those were
