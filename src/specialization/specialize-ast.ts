@@ -13,6 +13,11 @@ import {
   stringValue,
   nullValue,
   closureValue,
+  floatValue,
+  positiveFloat,
+  negativeFloat,
+  zeroFloat,
+  complexValue,
   boolean as booleanValue,
 } from "../types/lattice-ops";
 import { transferBinaryOp, transferCompare, transferUnaryNeg, transferNot } from "./transfer";
@@ -222,6 +227,8 @@ class ASTSpecializationVisitor {
         this.visitExpr(sub.index);
         return this.annotate(expr, TOP);
       }
+      case "Complex":
+        return this.annotate(expr, complexValue());
       default:
         return TOP;
     }
@@ -230,7 +237,14 @@ class ASTSpecializationVisitor {
   private visitLiteral(expr: ExprNS.Literal): AbstractValue {
     const value = expr.value;
     if (typeof value === "number") {
-      const info = value > 0 ? positiveInteger() : value < 0 ? negativeInteger() : zeroInteger();
+      if (Number.isInteger(value) && Number.isFinite(value)) {
+        // Integer literal
+        const info = value > 0 ? positiveInteger() : value < 0 ? negativeInteger() : zeroInteger();
+        return this.annotate(expr, info);
+      }
+      // Float literal (has fractional part, or is NaN/Infinity)
+      if (Number.isNaN(value)) return this.annotate(expr, floatValue());
+      const info = value > 0 ? positiveFloat() : value < 0 ? negativeFloat() : zeroFloat();
       return this.annotate(expr, info);
     } else if (typeof value === "boolean") {
       return this.annotate(expr, value ? trueValue() : falseValue());
