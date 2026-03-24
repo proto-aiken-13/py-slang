@@ -42,7 +42,10 @@ const enum SigTag {
 const MAX_SIG_CACHE = 50;
 
 declare const __DEBUG__: boolean;
-const debug: (msg: string) => void = msg => console.log(msg);
+const debug: (msg: string) => void =
+  typeof __DEBUG__ !== "undefined" && __DEBUG__
+    ? (msg: string) => console.log(msg)
+    : () => {};
 const lambdaReturnCache = new WeakMap<ExprNS.Lambda, StmtNS.Stmt[]>();
 
 /**
