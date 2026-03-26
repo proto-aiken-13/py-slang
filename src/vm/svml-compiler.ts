@@ -1,17 +1,17 @@
-import { StmtNS, ExprNS } from "../ast-types";
+import { ExprNS, StmtNS } from "../ast-types";
+import { BackwardsBindings } from "../backend/backwards-bindings";
+import { Environment, FunctionEnvironments, Resolver } from "../resolver";
+import type { SlotInfo } from "../specialization/specialize-ast";
+import type { AnalysisResult } from "../specialization/types";
 import { Token } from "../tokenizer";
 import { TokenType } from "../tokens";
+import type { AbstractValue } from "../types/abstract-value";
+import { BOOL_BIT, BoolRef, INT_BIT, IntRef } from "../types/abstract-value";
+import { SVMLIRBuilder } from "./SVMLIRBuilder";
+import { InstrumentationTracker } from "./instrumentation";
+import OpCodes from "./opcodes";
 import { PRIMITIVE_FUNCTIONS } from "./sinter-primitives";
 import { SVMLProgram } from "./types";
-import type { AbstractValue } from "../types/abstract-value";
-import { INT_BIT, BOOL_BIT, IntRef, BoolRef } from "../types/abstract-value";
-import type { AnalysisResult } from "../specialization/types";
-import type { SlotInfo } from "../specialization/specialize-ast";
-import { SVMLIRBuilder } from "./SVMLIRBuilder";
-import OpCodes from "./opcodes";
-import { FunctionEnvironments, Environment, Resolver } from "../resolver";
-import { InstrumentationTracker, InstrumentationConfig, DEFAULT_INSTRUMENTATION_CONFIG } from "./instrumentation";
-import { BackwardsBindings } from "../backend/backwards-bindings";
 
 // Fast compiler annotations for maximum performance
 interface CompilerAnnotation {
@@ -59,6 +59,7 @@ export class SVMLCompiler
 
   // Loop stack for break/continue support
   private loopStack: Array<{
+    kind: "while" | "for";
     breakLabel: number;
     continueLabel: number;
     iteratorOnStack: boolean;
@@ -818,9 +819,11 @@ export class SVMLCompiler
     return { maxStackSize: 1 };
   }
 
+  /** 
   visitStarredExpr(expr: ExprNS.Starred): ExpressionResult {
     throw new Error("Starred expressions are not yet supported in SVML compiler");
   }
+  */
 
   visitLambdaExpr(expr: ExprNS.Lambda): ExpressionResult {
     const ast: StmtNS.Stmt = new StmtNS.Return(
@@ -993,59 +996,43 @@ export class SVMLCompiler
   visitWhileStmt(stmt: StmtNS.While): ExpressionResult {
     const condInfo = this.getExprAnnotation(stmt.condition);
 
-    // While False: loop never executes
     if (condInfo && condInfo.sound.kinds === BOOL_BIT
         && condInfo.sound.boolRef === BoolRef.False) {
       this.builder.emitNullary(OpCodes.LGCU);
       return { maxStackSize: 1 };
     }
 
-    // While True: skip condition evaluation each iteration
+    const loopStartLabel = this.builder.markLabel();
+    const loopEndLabel = this.builder.getNextLabel();
+
     if (condInfo && condInfo.sound.kinds === BOOL_BIT
         && condInfo.sound.boolRef === BoolRef.True) {
-      const loopLabel = this.builder.markLabel();
-      const endLabel = this.builder.getNextLabel();
-      this.loopStack.push({ breakLabel: endLabel, continueLabel: loopLabel, iteratorOnStack: false });
-      const bodyResult = this.compileStatements(stmt.body);
-      this.builder.emitNullary(OpCodes.POPG);
-      this.builder.emitJump(OpCodes.BR, loopLabel);
-      this.loopStack.pop();
-      this.builder.markLabel(endLabel);
-      this.builder.emitNullary(OpCodes.LGCU);
-      return { maxStackSize: Math.max(bodyResult.maxStackSize, 1) };
+      return this.compileLoop(
+        {
+          kind: "while",
+          continueLabel: loopStartLabel,
+          breakLabel: loopEndLabel,
+          iteratorOnStack: false
+        },
+        () => ({ maxStackSize: 0 }),
+        stmt.body
+      );
     }
 
-    const loopLabel = this.builder.markLabel();
-    const endLabel = this.builder.getNextLabel();
-
-    this.loopStack.push({
-      breakLabel: endLabel,
-      continueLabel: loopLabel,
-      iteratorOnStack: false,
-    });
-
-    // Compile test
-    const testResult = this.compile(stmt.condition);
-    this.builder.emitJump(OpCodes.BRF, endLabel);
-
-    // Compile body
-    const bodyResult = this.compileStatements(stmt.body);
-    // Pop body result (while body values aren't used), matching for-loop behaviour
-    this.builder.emitNullary(OpCodes.POPG);
-    this.builder.emitJump(OpCodes.BR, loopLabel);
-
-    this.loopStack.pop();
-
-    this.builder.markLabel(endLabel);
-    this.builder.emitNullary(OpCodes.LGCU); // While loops return undefined
-
-    return {
-      maxStackSize: Math.max(
-        testResult.maxStackSize,
-        bodyResult.maxStackSize,
-        1
-      ),
-    };
+    return this.compileLoop(
+      {
+        kind: "while",
+        continueLabel: loopStartLabel,
+        breakLabel: loopEndLabel,
+        iteratorOnStack: false
+      },
+      () => {
+        const testResult = this.compile(stmt.condition);
+        this.builder.emitJump(OpCodes.BRF, loopEndLabel);
+        return testResult;
+      },
+      stmt.body
+    );
   }
 
   visitPassStmt(stmt: StmtNS.Pass): ExpressionResult {
@@ -1053,6 +1040,7 @@ export class SVMLCompiler
     return { maxStackSize: 1 };
   }
 
+  /** 
   visitIndentCreation(stmt: StmtNS.Indent): ExpressionResult {
     this.builder.emitNullary(OpCodes.LGCU);
     return { maxStackSize: 1 };
@@ -1062,6 +1050,7 @@ export class SVMLCompiler
     this.builder.emitNullary(OpCodes.LGCU);
     return { maxStackSize: 1 };
   }
+  */
 
   visitAnnAssignStmt(stmt: StmtNS.AnnAssign): ExpressionResult {
     throw new Error("AnnAssign not yet implemented in SVML compiler");
@@ -1071,10 +1060,7 @@ export class SVMLCompiler
     if (this.loopStack.length === 0) {
       throw new Error("Break statement outside loop");
     }
-    const { breakLabel, iteratorOnStack } = this.loopStack[this.loopStack.length - 1];
-    if (iteratorOnStack) {
-      this.builder.emitNullary(OpCodes.POPG); // drop iterator
-    }
+    const { breakLabel } = this.loopStack[this.loopStack.length - 1];
     this.builder.emitJump(OpCodes.BR, breakLabel);
     return { maxStackSize: 0 };
   }
@@ -1107,42 +1093,49 @@ export class SVMLCompiler
   }
 
   visitForStmt(stmt: StmtNS.For): ExpressionResult {
-    // Compile iterable and wrap in iterator
-    this.compile(stmt.iter);
-    this.builder.emitNullary(OpCodes.NEWITER);
+    const iterSlot = this.freshTempSlot("__for_iter");
+    const valueSlot = this.freshTempSlot("__for_val");
 
-    // Allocate labels
-    const loopStartLabel = this.builder.markLabel();
-    const loopEndLabel = this.builder.getNextLabel();
+    // __for_iter = iter(stmt.iter)
+    const iterExprResult = this.compile(stmt.iter);
+    this.builder.emitNullary(OpCodes.NEWITER);
+    this.builder.emitUnary(OpCodes.STLG, iterSlot);
+
+    const loopStart = this.builder.markLabel();
+    const loopEnd = this.builder.getNextLabel();
 
     this.loopStack.push({
-      breakLabel: loopEndLabel,
-      continueLabel: loopStartLabel,
-      iteratorOnStack: true,
+      kind: "for",
+      breakLabel: loopEnd,
+      continueLabel: loopStart,
+      iteratorOnStack: false
     });
 
-    // FOR_ITER: if exhausted, pop iter and jump to loopEnd; else push next value
-    this.builder.emitJump(OpCodes.FOR_ITER, loopEndLabel);
+    // load iterator each iteration
+    this.builder.emitUnary(OpCodes.LDLG, iterSlot);
 
-    // Store next value into loop variable (iterator stays on stack below)
+    // advance iterator: on exhaustion jump to end
+    this.builder.emitJump(OpCodes.FOR_ITER, loopEnd);
+
+    // yielded value -> hidden temp
+    this.builder.emitUnary(OpCodes.STLG, valueSlot);
+
+    // assign loop target = yielded value
+    this.builder.emitUnary(OpCodes.LDLG, valueSlot);
     const targetSlot = this.getOrAssignSlot(this.currentEnvironment, stmt.target.lexeme);
     this.builder.emitUnary(OpCodes.STLG, targetSlot);
 
-    // Compile loop body
     const bodyResult = this.compileStatements(stmt.body);
-    // Pop body result (loop body values aren't used)
     this.builder.emitNullary(OpCodes.POPG);
-
-    // Jump back to loop start
-    this.builder.emitJump(OpCodes.BR, loopStartLabel);
+    this.builder.emitJump(OpCodes.BR, loopStart);
 
     this.loopStack.pop();
+    this.builder.markLabel(loopEnd);
+    this.builder.emitNullary(OpCodes.LGCU);
 
-    // Mark loop end (iterator already popped by FOR_ITER on exhaustion)
-    this.builder.markLabel(loopEndLabel);
-    this.builder.emitNullary(OpCodes.LGCU); // for-loop produces undefined
-
-    return { maxStackSize: Math.max(bodyResult.maxStackSize + 2, 2) };
+    return {
+      maxStackSize: Math.max(iterExprResult.maxStackSize, bodyResult.maxStackSize, 2)
+    };
   }
 
   visitFileInputStmt(stmt: StmtNS.FileInput): ExpressionResult {
@@ -1174,5 +1167,36 @@ export class SVMLCompiler
     }
 
     return { maxStackSize };
+  }
+
+  private compileLoop(
+    frame: {
+      kind: "while" | "for";
+      continueLabel: number;
+      breakLabel: number;
+      iteratorOnStack: boolean;
+    },
+    emitHead: () => ExpressionResult,
+    body: StmtNS.Stmt[]
+  ): ExpressionResult {
+    this.loopStack.push(frame);
+
+    const headResult = emitHead();
+    const bodyResult = this.compileStatements(body);
+    this.builder.emitNullary(OpCodes.POPG);
+    this.builder.emitJump(OpCodes.BR, frame.continueLabel);
+
+    this.loopStack.pop();
+    this.builder.markLabel(frame.breakLabel);
+    this.builder.emitNullary(OpCodes.LGCU);
+
+    return {
+      maxStackSize: Math.max(headResult.maxStackSize, bodyResult.maxStackSize, 1)
+    };
+  }
+
+  private freshTempSlot(prefix = "__tmp"): number {
+    const name = `${prefix}_${this.tmpCounter++}`;
+    return this.getOrAssignSlot(this.currentEnvironment, name);
   }
 }
